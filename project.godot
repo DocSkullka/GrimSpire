@@ -7,22 +7,20 @@ config_version=5
 [application]
 
 config/name="GrimSpire: Ascent of the Cursed"
-run/main_scene="res://scenes/MainArena.tscn"
-config/features=PackedStringArray("4.3", "C#")
+run/main_scene="res://scenes/MainGame.tscn"
+config/features=PackedStringArray("4.7", "GL Compatibility")
+config/icon="res://assets/ui/gold_coin.png"
 
 [display]
 
 window/size/viewport_width=1280
 window/size/viewport_height=720
+window/size/resizable=true
 window/stretch/mode="canvas_items"
 window/stretch/aspect="keep"
-
-[dotnet]
-
-project/assembly_name="GrimSpire"
 
 [rendering]
 
 renderer/rendering_method="gl_compatibility"
 renderer/rendering_method.mobile="gl_compatibility"
-environment/defaults/default_clear_color=Color(0.06, 0.05, 0.08, 1)
+environment/defaults/default_clear_color=Color(0.04, 0.03, 0.05, 1)

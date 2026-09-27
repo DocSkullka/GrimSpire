@@ -1,0 +1,14 @@
+{
+	"HighestFloorReached": 1,
+	"PersistentGold": 200,
+	"TotalRunsPlayed": 0,
+	"UpgradeRanks": {
+		"Armor": 0,
+		"AttackSpeed": 0,
+		"CritChance": 0,
+		"Damage": 0,
+		"GoldMultiplier": 0,
+		"Health": 2,
+		"Lifesteal": 0
+	}
+}

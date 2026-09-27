@@ -1,0 +1,349 @@
+[gd_scene load_steps=6 format=3 uid="uid://c6xkvy3f1abqp"]
+
+[ext_resource type="Script" path="res://scripts/GameController.gd" id="1_ctrl"]
+[ext_resource type="Script" path="res://scripts/SoundManager.gd" id="2_snd"]
+[ext_resource type="Script" path="res://scripts/GameData.gd" id="3_data"]
+[ext_resource type="Script" path="res://scripts/SaveManager.gd" id="4_save"]
+[ext_resource type="Shader" path="res://shaders/dark_gothic_vignette.gdshader" id="5_vignette"]
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_post"]
+shader = ExtResource("5_vignette")
+shader_parameter/vignette_intensity = 1.35
+shader_parameter/vignette_opacity = 0.65
+shader_parameter/vignette_color = Color(0.02, 0.01, 0.03, 1)
+shader_parameter/grain_amount = 0.03
+shader_parameter/desaturation = 0.15
+
+[node name="MainGame" type="Node2D"]
+script = ExtResource("1_ctrl")
+
+[node name="SoundManager" type="Node" parent="."]
+script = ExtResource("2_snd")
+
+[node name="GameData" type="Node" parent="."]
+script = ExtResource("3_data")
+
+[node name="SaveManager" type="Node" parent="."]
+script = ExtResource("4_save")
+
+[node name="BackgroundLayer" type="CanvasLayer" parent="."]
+layer = -10
+
+[node name="BackgroundTexture" type="TextureRect" parent="BackgroundLayer"]
+offset_right = 1280.0
+offset_bottom = 720.0
+expand_mode = 1
+stretch_mode = 6
+
+[node name="GroundShadow" type="ColorRect" parent="BackgroundLayer"]
+offset_top = 460.0
+offset_right = 1280.0
+offset_bottom = 720.0
+color = Color(0.04, 0.03, 0.05, 0.65)
+
+[node name="Arena" type="Node2D" parent="."]
+
+[node name="PlayerAnchor" type="Marker2D" parent="Arena"]
+position = Vector2(340, 480)
+
+[node name="PlayerSprite" type="Sprite2D" parent="Arena/PlayerAnchor"]
+position = Vector2(0, -180)
+scale = Vector2(0.75, 0.75)
+
+[node name="EnemyAnchor" type="Marker2D" parent="Arena"]
+position = Vector2(940, 480)
+
+[node name="EnemySprite" type="Sprite2D" parent="Arena/EnemyAnchor"]
+position = Vector2(0, -180)
+scale = Vector2(0.75, 0.75)
+
+[node name="FXLayer" type="Node2D" parent="Arena"]
+
+[node name="UI" type="CanvasLayer" parent="."]
+layer = 5
+
+[node name="TopHUD" type="Control" parent="UI"]
+layout_mode = 3
+anchors_preset = 10
+anchor_right = 1.0
+offset_bottom = 70.0
+grow_horizontal = 2
+
+[node name="FloorBanner" type="Label" parent="UI/TopHUD"]
+layout_mode = 1
+anchors_preset = 10
+anchor_right = 1.0
+offset_top = 16.0
+offset_bottom = 50.0
+grow_horizontal = 2
+theme_override_colors/font_color = Color(0.9, 0.85, 0.75, 1)
+theme_override_font_sizes/font_size = 22
+text = "FLOOR 1: ASCENDING GAUNTLET"
+horizontal_alignment = 1
+
+[node name="GoldDisplay" type="HBoxContainer" parent="UI/TopHUD"]
+layout_mode = 1
+anchors_preset = 1
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -180.0
+offset_top = 16.0
+offset_right = -30.0
+offset_bottom = 52.0
+grow_horizontal = 0
+alignment = 2
+
+[node name="GoldIcon" type="TextureRect" parent="UI/TopHUD/GoldDisplay"]
+custom_minimum_size = Vector2(32, 32)
+layout_mode = 2
+expand_mode = 1
+stretch_mode = 5
+
+[node name="GoldLabel" type="Label" parent="UI/TopHUD/GoldDisplay"]
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 0.85, 0.25, 1)
+theme_override_font_sizes/font_size = 20
+text = "0 G"
+
+[node name="BattleHUD" type="Control" parent="UI"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+
+[node name="PlayerHPBar" type="ProgressBar" parent="UI/BattleHUD"]
+layout_mode = 0
+offset_left = 140.0
+offset_top = 480.0
+offset_right = 480.0
+offset_bottom = 508.0
+theme_override_font_sizes/font_size = 12
+value = 100.0
+show_percentage = false
+
+[node name="HPLabel" type="Label" parent="UI/BattleHUD/PlayerHPBar"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_font_sizes/font_size = 12
+text = "100 / 100 HP"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="NameLabel" type="Label" parent="UI/BattleHUD/PlayerHPBar"]
+layout_mode = 1
+anchors_preset = 10
+anchor_right = 1.0
+offset_top = -24.0
+offset_bottom = -2.0
+grow_horizontal = 2
+theme_override_colors/font_color = Color(0.7, 0.85, 1, 1)
+theme_override_font_sizes/font_size = 14
+text = "Cursed Wanderer"
+
+[node name="EnemyHPBar" type="ProgressBar" parent="UI/BattleHUD"]
+layout_mode = 0
+offset_left = 800.0
+offset_top = 480.0
+offset_right = 1140.0
+offset_bottom = 508.0
+theme_override_font_sizes/font_size = 12
+value = 100.0
+show_percentage = false
+
+[node name="HPLabel" type="Label" parent="UI/BattleHUD/EnemyHPBar"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_font_sizes/font_size = 12
+text = "40 / 40 HP"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="NameLabel" type="Label" parent="UI/BattleHUD/EnemyHPBar"]
+layout_mode = 1
+anchors_preset = 10
+anchor_right = 1.0
+offset_top = -24.0
+offset_bottom = -2.0
+grow_horizontal = 2
+theme_override_colors/font_color = Color(1, 0.4, 0.4, 1)
+theme_override_font_sizes/font_size = 14
+text = "Feeble Skeleton"
+horizontal_alignment = 2
+
+[node name="EquippedGearBar" type="HBoxContainer" parent="UI/BattleHUD"]
+layout_mode = 0
+offset_left = 140.0
+offset_top = 525.0
+offset_right = 480.0
+offset_bottom = 575.0
+theme_override_constants/separation = 12
+
+[node name="CombatLogPanel" type="PanelContainer" parent="UI/BattleHUD"]
+layout_mode = 0
+offset_left = 340.0
+offset_top = 535.0
+offset_right = 940.0
+offset_bottom = 695.0
+
+[node name="CombatLog" type="RichTextLabel" parent="UI/BattleHUD/CombatLogPanel"]
+layout_mode = 2
+theme_override_font_sizes/normal_font_size = 13
+theme_override_font_sizes/bold_font_size = 13
+bbcode_enabled = true
+scroll_following = true
+
+[node name="CampPanel" type="PanelContainer" parent="UI"]
+visible = false
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="VBox" type="VBoxContainer" parent="UI/CampPanel"]
+layout_mode = 2
+theme_override_constants/separation = 15
+
+[node name="Header" type="VBoxContainer" parent="UI/CampPanel/VBox"]
+layout_mode = 2
+theme_override_constants/separation = 4
+
+[node name="Title" type="Label" parent="UI/CampPanel/VBox/Header"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.95, 0.25, 0.3, 1)
+theme_override_font_sizes/font_size = 28
+text = "THE BLOOD ALTAR (BASE CAMP)"
+horizontal_alignment = 1
+
+[node name="Subtitle" type="Label" parent="UI/CampPanel/VBox/Header"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.7, 0.7, 0.75, 1)
+theme_override_font_sizes/font_size = 14
+text = "Consecrate the gold of fallen climbs to permanently strengthen your soul."
+horizontal_alignment = 1
+
+[node name="AltarGoldLabel" type="Label" parent="UI/CampPanel/VBox/Header"]
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 0.85, 0.3, 1)
+theme_override_font_sizes/font_size = 18
+text = "Gold: 0 G   |   Deepest Descent: Floor 1"
+horizontal_alignment = 1
+
+[node name="ScrollContainer" type="ScrollContainer" parent="UI/CampPanel/VBox"]
+custom_minimum_size = Vector2(650, 380)
+layout_mode = 2
+size_flags_horizontal = 4
+size_flags_vertical = 3
+
+[node name="UpgradesVBox" type="VBoxContainer" parent="UI/CampPanel/VBox/ScrollContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 10
+
+[node name="BtnAscend" type="Button" parent="UI/CampPanel/VBox"]
+custom_minimum_size = Vector2(360, 56)
+layout_mode = 2
+size_flags_horizontal = 4
+theme_override_colors/font_color = Color(1, 0.9, 0.8, 1)
+theme_override_font_sizes/font_size = 20
+text = "ASCEND THE CURSED SPIRE"
+
+[node name="DraftModal" type="PanelContainer" parent="UI"]
+visible = false
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -460.0
+offset_top = -250.0
+offset_right = 460.0
+offset_bottom = 250.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="VBox" type="VBoxContainer" parent="UI/DraftModal"]
+layout_mode = 2
+theme_override_constants/separation = 15
+
+[node name="DraftTitle" type="Label" parent="UI/DraftModal/VBox"]
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 0.85, 0.3, 1)
+theme_override_font_sizes/font_size = 22
+text = "FLOOR CLEARED! CHOOSE YOUR REWARD"
+horizontal_alignment = 1
+
+[node name="DraftSubtitle" type="Label" parent="UI/DraftModal/VBox"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.7, 0.7, 0.75, 1)
+theme_override_font_sizes/font_size = 13
+text = "Choose 1 relic to equip for this ascent. Replaces existing slot."
+horizontal_alignment = 1
+
+[node name="CardsContainer" type="HBoxContainer" parent="UI/DraftModal/VBox"]
+layout_mode = 2
+size_flags_vertical = 3
+theme_override_constants/separation = 30
+alignment = 1
+
+[node name="DefeatModal" type="PanelContainer" parent="UI"]
+visible = false
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -300.0
+offset_top = -180.0
+offset_right = 300.0
+offset_bottom = 180.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="VBox" type="VBoxContainer" parent="UI/DefeatModal"]
+layout_mode = 2
+theme_override_constants/separation = 18
+alignment = 1
+
+[node name="Title" type="Label" parent="UI/DefeatModal/VBox"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.9, 0.2, 0.2, 1)
+theme_override_font_sizes/font_size = 24
+text = "YOUR FLESH HAS PERISHED"
+horizontal_alignment = 1
+
+[node name="SummaryLabel" type="Label" parent="UI/DefeatModal/VBox"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.8, 0.8, 0.85, 1)
+theme_override_font_sizes/font_size = 14
+text = "You reached Floor 1.
+All items have dissolved into the void.
+Your accumulated gold has been preserved."
+horizontal_alignment = 1
+
+[node name="BtnReturnAltar" type="Button" parent="UI/DefeatModal/VBox"]
+custom_minimum_size = Vector2(240, 48)
+layout_mode = 2
+size_flags_horizontal = 4
+theme_override_font_sizes/font_size = 16
+text = "RETURN TO BLOOD ALTAR"
+
+[node name="PostProcessing" type="CanvasLayer" parent="."]
+layer = 20
+
+[node name="VignetteRect" type="ColorRect" parent="PostProcessing"]
+material = SubResource("ShaderMaterial_post")
+offset_right = 1280.0
+offset_bottom = 720.0
+mouse_filter = 2
