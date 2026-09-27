@@ -23,10 +23,24 @@ public class CombatEngine
     /// </summary>
     public CombatResult SimulateBattle(Character player, List<Enemy> enemies)
     {
+        if (enemies == null || enemies.Count == 0)
+        {
+            return new CombatResult
+            {
+                PlayerWon = player.CurrentHealth > 0,
+                DurationSeconds = 0.0,
+                TotalDamageDealt = 0,
+                TotalDamageTaken = 0,
+                TotalHealingDone = 0,
+                PlayerEndingHealth = player.CurrentHealth,
+                Events = Array.Empty<CombatEvent>()
+            };
+        }
+
         var events = new List<CombatEvent>();
         var effectivePlayerStats = player.GetEffectiveStats();
         
-        double playerAttackCooldown = 1.0 / effectivePlayerStats.AttackSpeed;
+        double playerSpeed = Math.Clamp(effectivePlayerStats.AttackSpeed, 0.1, 10.0);
         double playerCooldownTimer = 0.0;
 
         var activeEnemies = enemies.Select(e => new EnemyCombatant(e)).ToList();
@@ -59,7 +73,7 @@ public class CombatEngine
             // 2. Player attacks if ready
             if (playerCooldownTimer <= 0.0 && player.CurrentHealth > 0)
             {
-                playerCooldownTimer = 1.0 / effectivePlayerStats.AttackSpeed;
+                playerCooldownTimer = 1.0 / playerSpeed;
                 PerformAttack(
                     attackerName: player.Name,
                     attackerStats: effectivePlayerStats,
@@ -102,7 +116,8 @@ public class CombatEngine
                 enemy.CooldownTimer -= TickStep;
                 if (enemy.CooldownTimer <= 0.0)
                 {
-                    enemy.CooldownTimer = 1.0 / enemy.Enemy.Stats.AttackSpeed;
+                    double enemySpeed = Math.Clamp(enemy.Enemy.Stats.AttackSpeed, 0.1, 10.0);
+                    enemy.CooldownTimer = 1.0 / enemySpeed;
 
                     PerformAttack(
                         attackerName: enemy.Enemy.Name,
@@ -137,6 +152,26 @@ public class CombatEngine
             {
                 break;
             }
+        }
+
+        // Check for timeout
+        if (currentTime >= MaxBattleDurationSeconds && player.CurrentHealth > 0 && activeEnemies.Any(e => e.IsAlive))
+        {
+            events.Add(new CombatEvent
+            {
+                TimestampSeconds = Math.Round(currentTime, 2),
+                Type = CombatEventType.UnitDefeated,
+                Source = "The Spire's Creeping Miasma",
+                Target = player.Name,
+                Message = $"Time limit reached! The suffocating dark miasma of the Spire claims {player.Name}'s soul!"
+            });
+            player.CurrentHealth = 0;
+        }
+
+        // Sync final HP back to Enemy objects
+        foreach (var combatant in activeEnemies)
+        {
+            combatant.Enemy.CurrentHealth = combatant.CurrentHealth;
         }
 
         bool playerWon = player.CurrentHealth > 0 && activeEnemies.All(e => !e.IsAlive);
@@ -181,7 +216,8 @@ public class CombatEngine
 
         // 2. Critical Strike Check
         bool isCrit = _rng.NextDouble() < attackerStats.CritChance;
-        double rawDamage = attackerStats.AttackDamage * (isCrit ? attackerStats.CritMultiplier : 1.0);
+        double critMult = attackerStats.CritMultiplier > 0 ? attackerStats.CritMultiplier : 1.5;
+        double rawDamage = attackerStats.AttackDamage * (isCrit ? critMult : 1.0);
 
         // 3. Armor Mitigation
         double mitigationMultiplier = Stats.CalculateDamageMitigationMultiplier(targetStats.Armor);
@@ -232,7 +268,8 @@ public class CombatEngine
         {
             Enemy = enemy;
             CurrentHealth = enemy.CurrentHealth;
-            CooldownTimer = 1.0 / enemy.Stats.AttackSpeed;
+            double speed = Math.Clamp(enemy.Stats.AttackSpeed, 0.1, 10.0);
+            CooldownTimer = 1.0 / speed;
         }
     }
 }

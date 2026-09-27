@@ -1,12 +1,13 @@
 using GrimSpire.Core.Combat;
 using GrimSpire.Core.Models;
+using GrimSpire.Core.Persistence;
 using GrimSpire.Core.Progression;
 
 namespace GrimSpire.Cli;
 
 public static class Program
 {
-    private static readonly MetaProgression Meta = new();
+    private static MetaProgression Meta = SaveManager.Load();
 
     public static void Main(string[] args)
     {
@@ -53,7 +54,8 @@ public static class Program
                     break;
                 case "0":
                     exit = true;
-                    Console.WriteLine("\nThe Spire will await your return...");
+                    SaveManager.Save(Meta);
+                    Console.WriteLine("\nProgress saved. The Spire will await your return...");
                     break;
                 default:
                     Console.WriteLine("Invalid choice.");
@@ -141,6 +143,7 @@ public static class Program
                 Console.WriteLine($"\n\u001b[31m☠ YOU DIED on Floor {floor.FloorNumber}...\u001b[0m");
                 Console.WriteLine($"All equipment gathered on this run was lost into the abyss.");
                 Console.WriteLine($"Gold salvaged and permanently brought to camp: \u001b[33m+{manager.Player.GoldInRun} Gold\u001b[0m\n");
+                SaveManager.Save(Meta);
                 Console.WriteLine("Press Enter to return to Camp...");
                 Console.ReadLine();
                 break;
@@ -180,6 +183,7 @@ public static class Program
                 var chosen = upgrades[idx - 1];
                 if (Meta.PurchaseUpgrade(chosen))
                 {
+                    SaveManager.Save(Meta);
                     Console.WriteLine($"\u001b[32m✔ Purchased Rank {Meta.UpgradeRanks[chosen]} of {chosen}!\u001b[0m");
                 }
                 else

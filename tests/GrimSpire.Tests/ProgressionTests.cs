@@ -47,7 +47,7 @@ public class ProgressionTests
     [Fact]
     public void Character_EquipItem_UpdatesEffectiveStats()
     {
-        var player = new Character(new Stats { MaxHealth = 100, AttackDamage = 10 });
+        var player = new Character(Stats.DefaultHero with { MaxHealth = 100, AttackDamage = 10 });
         var weapon = new Item
         {
             Name = "Blood Cleaver",
@@ -60,6 +60,11 @@ public class ProgressionTests
 
         Assert.Equal(35, effective.AttackDamage);
         Assert.Equal(0.15, effective.CritChance, 3); // 0.05 base + 0.10 item
+        // Verify that equipping weapon does NOT leak unintended HP, Armor, or AttackSpeed
+        Assert.Equal(100, effective.MaxHealth);
+        Assert.Equal(5, effective.Armor);
+        Assert.Equal(1.0, effective.AttackSpeed);
+        Assert.Equal(0.05, effective.DodgeChance);
     }
 
     [Fact]

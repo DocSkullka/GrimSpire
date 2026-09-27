@@ -6,7 +6,7 @@ namespace GrimSpire.Core.Models;
 public class Character
 {
     public string Name { get; set; } = "Cursed Wanderer";
-    public Stats BaseStats { get; set; } = new();
+    public Stats BaseStats { get; set; } = Stats.DefaultHero;
     public double CurrentHealth { get; set; }
     public int GoldInRun { get; set; } = 0;
     public int HighestFloorReached { get; set; } = 1;
@@ -15,7 +15,7 @@ public class Character
 
     public Character(Stats? initialStats = null)
     {
-        BaseStats = initialStats ?? new Stats();
+        BaseStats = initialStats ?? Stats.DefaultHero;
         CurrentHealth = BaseStats.MaxHealth;
     }
 
@@ -37,11 +37,16 @@ public class Character
         EquippedItems.TryGetValue(item.Slot, out var previous);
         EquippedItems[item.Slot] = item;
         
-        // Ensure current health does not exceed new maximum
-        var maxHp = GetEffectiveStats().MaxHealth;
-        if (CurrentHealth > maxHp)
+        var effective = GetEffectiveStats();
+        double hpGain = item.StatBonuses.MaxHealth - (previous?.StatBonuses.MaxHealth ?? 0);
+        if (hpGain > 0)
         {
-            CurrentHealth = maxHp;
+            CurrentHealth += hpGain;
+        }
+
+        if (CurrentHealth > effective.MaxHealth)
+        {
+            CurrentHealth = effective.MaxHealth;
         }
 
         return previous;
@@ -73,5 +78,6 @@ public class Character
         EquippedItems.Clear();
         CurrentHealth = BaseStats.MaxHealth;
         GoldInRun = 0;
+        HighestFloorReached = 1;
     }
 }

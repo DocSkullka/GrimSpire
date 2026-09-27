@@ -17,9 +17,12 @@ public class ItemDraftService
     public List<Item> GenerateDraft(int currentFloor)
     {
         var draft = new List<Item>();
+        var allSlots = Enum.GetValues<ItemSlot>().OrderBy(_ => _rng.Next()).ToList();
+        
         for (int i = 0; i < 3; i++)
         {
-            var slot = (ItemSlot)_rng.Next(Enum.GetValues<ItemSlot>().Length);
+            // Pick diverse slots when possible
+            var slot = i < allSlots.Count ? allSlots[i] : (ItemSlot)_rng.Next(allSlots.Count);
             var rarity = RollRarity(currentFloor);
             draft.Add(CreateRandomItem(slot, rarity, currentFloor));
         }
@@ -28,26 +31,25 @@ public class ItemDraftService
 
     private ItemRarity RollRarity(int floor)
     {
-        double roll = _rng.NextDouble();
-        // Floor scaling shifts probabilities towards higher tiers
-        double legendaryChance = Math.Min(0.08, 0.01 + (floor * 0.005));
-        double epicChance = Math.Min(0.20, 0.04 + (floor * 0.012));
-        double rareChance = Math.Min(0.35, 0.15 + (floor * 0.02));
-        double uncommonChance = Math.Min(0.40, 0.35 + (floor * 0.01));
+        double commonWeight = Math.Max(5.0, 50.0 - (floor * 1.5));
+        double uncommonWeight = Math.Max(10.0, 30.0 + (floor * 0.5));
+        double rareWeight = Math.Max(10.0, 15.0 + (floor * 1.0));
+        double epicWeight = Math.Min(30.0, 4.0 + (floor * 0.8));
+        double legendaryWeight = Math.Min(15.0, 1.0 + (floor * 0.4));
+        double cursedWeight = floor >= 5 ? 8.0 : 0.0;
 
-        if (roll < legendaryChance) return ItemRarity.Legendary;
-        roll -= legendaryChance;
-        if (roll < epicChance) return ItemRarity.Epic;
-        roll -= epicChance;
-        if (roll < rareChance) return ItemRarity.Rare;
-        roll -= rareChance;
-        if (roll < uncommonChance) return ItemRarity.Uncommon;
+        double totalWeight = commonWeight + uncommonWeight + rareWeight + epicWeight + legendaryWeight + cursedWeight;
+        double roll = _rng.NextDouble() * totalWeight;
 
-        // Small chance of cursed item on floors 5+
-        if (floor >= 5 && _rng.NextDouble() < 0.06)
-        {
-            return ItemRarity.Cursed;
-        }
+        if (roll < cursedWeight) return ItemRarity.Cursed;
+        roll -= cursedWeight;
+        if (roll < legendaryWeight) return ItemRarity.Legendary;
+        roll -= legendaryWeight;
+        if (roll < epicWeight) return ItemRarity.Epic;
+        roll -= epicWeight;
+        if (roll < rareWeight) return ItemRarity.Rare;
+        roll -= rareWeight;
+        if (roll < uncommonWeight) return ItemRarity.Uncommon;
 
         return ItemRarity.Common;
     }
@@ -81,65 +83,78 @@ public class ItemDraftService
 
     private Item GenerateWeapon(ItemRarity rarity, double mult)
     {
-        string[] prefixes = { "Rusty", "Honed", "Bleeding", "Serrated", "Gothic", "Eldritch" };
+        string[] prefixes = rarity == ItemRarity.Cursed
+            ? new[] { "Blood-Drinking", "Soul-Severing", "Abyssal", "Doomed" }
+            : new[] { "Rusty", "Honed", "Bleeding", "Serrated", "Gothic", "Eldritch" };
         string[] bases = { "Broadsword", "Cleaver", "War-Scythe", "Flanged Mace", "Spike Rapier" };
 
         string name = $"{prefixes[_rng.Next(prefixes.Length)]} {bases[_rng.Next(bases.Length)]}";
+        bool isCursed = rarity == ItemRarity.Cursed;
         
         return new Item
         {
             Name = name,
             Slot = ItemSlot.Weapon,
             Rarity = rarity,
-            Description = $"Inflicts deadly wounds. Tier scaling: {mult:F1}x",
+            Description = isCursed ? $"Immense lethality at the cost of vulnerability." : $"Inflicts deadly wounds. Tier scaling: {mult:F1}x",
             StatBonuses = new Stats
             {
                 AttackDamage = Math.Round(8 * mult),
                 AttackSpeed = Math.Round(0.1 * mult, 2),
+                Armor = isCursed ? -Math.Round(3 * mult) : 0,
                 CritChance = rarity >= ItemRarity.Rare ? 0.08 : 0.02,
-                Lifesteal = rarity == ItemRarity.Cursed ? 0.15 : (rarity >= ItemRarity.Epic ? 0.05 : 0.0)
+                Lifesteal = isCursed ? 0.15 : (rarity >= ItemRarity.Epic ? 0.05 : 0.0)
             },
-            SpecialEffect = rarity >= ItemRarity.Epic ? "Sundering Strike: Hits reduce enemy defense" : ""
+            SpecialEffect = isCursed ? "Curse: -Armor, +Massive DMG & Lifesteal" : (rarity >= ItemRarity.Epic ? "Sundering Strike: Hits reduce enemy defense" : "")
         };
     }
 
     private Item GenerateArmor(ItemRarity rarity, double mult)
     {
-        string[] bases = { "Plated Hauberk", "Bone Carapace", "Cuirass of Despair", "Ironmail Vest" };
+        string[] bases = rarity == ItemRarity.Cursed
+            ? new[] { "Flayed Flesh Carapace", "Torture Rack Mail", "Shrine-Robber's Hauberk" }
+            : new[] { "Plated Hauberk", "Bone Carapace", "Cuirass of Despair", "Ironmail Vest" };
         string name = $"{bases[_rng.Next(bases.Length)]}";
+        bool isCursed = rarity == ItemRarity.Cursed;
 
         return new Item
         {
             Name = name,
             Slot = ItemSlot.Armor,
             Rarity = rarity,
-            Description = $"Protects against vicious blows. Tier scaling: {mult:F1}x",
+            Description = isCursed ? "Immense bulk but encumbers your movement." : $"Protects against vicious blows. Tier scaling: {mult:F1}x",
             StatBonuses = new Stats
             {
                 Armor = Math.Round(6 * mult),
-                MaxHealth = Math.Round(35 * mult)
+                MaxHealth = Math.Round(35 * mult),
+                DodgeChance = isCursed ? -0.05 : 0.0
             },
-            SpecialEffect = rarity >= ItemRarity.Epic ? "Retaliation: Thorns damage to attackers" : ""
+            SpecialEffect = isCursed ? "Curse: -5% Dodge, +Colossal Health" : (rarity >= ItemRarity.Epic ? "Retaliation: Thorns damage to attackers" : "")
         };
     }
 
     private Item GenerateHelmet(ItemRarity rarity, double mult)
     {
-        string[] bases = { "Iron Sallet", "Executioner's Hood", "Horned Bascinet", "Death Mask" };
+        string[] bases = rarity == ItemRarity.Cursed
+            ? new[] { "Crown of Thorns", "Executioner's Blindfold", "Gilded Skull of Torment" }
+            : new[] { "Iron Sallet", "Executioner's Hood", "Horned Bascinet", "Death Mask" };
         string name = $"{bases[_rng.Next(bases.Length)]}";
+        bool isCursed = rarity == ItemRarity.Cursed;
 
         return new Item
         {
             Name = name,
             Slot = ItemSlot.Helmet,
             Rarity = rarity,
-            Description = $"Shields the mind and head. Tier scaling: {mult:F1}x",
+            Description = isCursed ? "Pierces the skull granting bloodlust." : $"Shields the mind and head. Tier scaling: {mult:F1}x",
             StatBonuses = new Stats
             {
-                Armor = Math.Round(3 * mult),
-                MaxHealth = Math.Round(20 * mult),
-                CritChance = rarity >= ItemRarity.Rare ? 0.06 : 0.0
-            }
+                Armor = isCursed ? 0 : Math.Round(3 * mult),
+                MaxHealth = isCursed ? -Math.Round(15 * mult) : Math.Round(20 * mult),
+                AttackDamage = isCursed ? Math.Round(10 * mult) : 0,
+                CritChance = isCursed ? 0.15 : (rarity >= ItemRarity.Rare ? 0.06 : 0.0)
+            },
+            SpecialEffect = isCursed ? "Curse: -Max HP, +Bonus ATK & Crit" : ""
         };
     }
 
@@ -147,19 +162,21 @@ public class ItemDraftService
     {
         string[] bases = { "Spiked Buckler", "Tome of Blood Rites", "Grim Aegis", "Skull Lantern" };
         string name = $"{bases[_rng.Next(bases.Length)]}";
+        bool isCursed = rarity == ItemRarity.Cursed;
 
         return new Item
         {
             Name = name,
             Slot = ItemSlot.OffHand,
             Rarity = rarity,
-            Description = $"Secondary equipment yielding balance in combat. Tier scaling: {mult:F1}x",
+            Description = isCursed ? "Unholy focus that drains your defenses." : $"Secondary equipment yielding balance in combat. Tier scaling: {mult:F1}x",
             StatBonuses = new Stats
             {
-                Armor = Math.Round(4 * mult),
+                Armor = isCursed ? -Math.Round(4 * mult) : Math.Round(4 * mult),
                 DodgeChance = Math.Round(0.04 * mult, 2),
-                AttackDamage = Math.Round(3 * mult)
-            }
+                AttackDamage = Math.Round((isCursed ? 8 : 3) * mult)
+            },
+            SpecialEffect = isCursed ? "Curse: -Armor, +Heavy Offhand DMG" : ""
         };
     }
 
@@ -167,19 +184,22 @@ public class ItemDraftService
     {
         string[] bases = { "Bloodstone Ring", "Amulet of the Tormented", "Signet of Greed", "Cursed Band" };
         string name = $"{bases[_rng.Next(bases.Length)]}";
+        bool isCursed = rarity == ItemRarity.Cursed;
 
         return new Item
         {
             Name = name,
             Slot = ItemSlot.Accessory,
             Rarity = rarity,
-            Description = $"Mystic trinket channeling ancient tower energies. Tier scaling: {mult:F1}x",
+            Description = isCursed ? "Leaches the wearer's vitality for dark power." : $"Mystic trinket channeling ancient tower energies. Tier scaling: {mult:F1}x",
             StatBonuses = new Stats
             {
                 CritChance = Math.Round(0.05 * mult, 2),
                 CritMultiplier = Math.Round(0.3 * mult, 2),
-                Lifesteal = Math.Round(0.04 * mult, 2)
-            }
+                Lifesteal = Math.Round((isCursed ? 0.12 : 0.04) * mult, 2),
+                MaxHealth = isCursed ? -Math.Round(20 * mult) : 0
+            },
+            SpecialEffect = isCursed ? "Curse: -Max HP, +Greatly increased Lifesteal" : ""
         };
     }
 }

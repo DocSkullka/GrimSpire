@@ -50,6 +50,7 @@
 
 ```text
 D:\GrimSpire\
+├── project.godot                 # Конфигурация Godot 4.3 (.NET)
 ├── .gitignore                    # Игнорирование бинарников, .godot, кэша
 ├── GrimSpire.sln                 # .NET 8 Solution
 ├── README.md                     # Документация проекта
@@ -61,11 +62,15 @@ D:\GrimSpire\
 │   ├── items.json                # Библиотека предметов и аффиксов
 │   ├── enemies.json              # Библиотека монстров и боссов
 │   └── meta_upgrades.json        # Дерево мета-прокачки
+├── scenes/                       # Готовые сцены Godot 4
+│   └── MainArena.tscn            # 2D арена башни с интерфейсом и маркерами
+├── shaders/                      # Шейдеры постобработки в стиле Don't Starve
+│   └── dark_gothic_vignette.gdshader # Виньетка, зернистость туши, градация
 ├── src/
-│   ├── GrimSpire.Core/           # Ядро симуляции (Combat, Progression, Models)
-│   └── GrimSpire.Cli/            # Интерактивный CLI симулятор забегов и баланса
+│   ├── GrimSpire.Core/           # Ядро симуляции (Combat, Progression, Models, Persistence, Data)
+│   └── GrimSpire.Cli/            # Интерактивный CLI симулятор забегов, баланса и авто-сохранения
 └── tests/
-    └── GrimSpire.Tests/          # 22+ Unit-тестов ядра логики
+    └── GrimSpire.Tests/          # 33 Unit-тестов ядра логики, персистентности и пограничных случаев
 ```
 
 ---

@@ -70,7 +70,7 @@ public class FloorGenerator
 
             for (int i = 0; i < enemyCount; i++)
             {
-                enemies.Add(GenerateRegularEnemy(floorNumber, isElite, i + 1));
+                enemies.Add(GenerateRegularEnemy(floorNumber, isElite, i + 1, enemyCount));
             }
         }
 
@@ -86,7 +86,7 @@ public class FloorGenerator
         };
     }
 
-    private Enemy GenerateRegularEnemy(int floorNumber, bool isElite, int index)
+    private Enemy GenerateRegularEnemy(int floorNumber, bool isElite, int index, int totalEnemies)
     {
         double scalingFactor = 1.0 + (floorNumber * 0.12);
         if (isElite) scalingFactor *= 1.45;
@@ -102,10 +102,11 @@ public class FloorGenerator
         };
 
         string baseName = mobTemplates[_rng.Next(mobTemplates.Length)];
-        string displayName = isElite ? $"[Elite] {baseName}" : baseName;
+        string suffix = totalEnemies > 1 ? $" #{index}" : "";
+        string displayName = isElite ? $"[Elite] {baseName}{suffix}" : $"{baseName}{suffix}";
 
         return new Enemy(
-            name: $"{displayName} #{index}",
+            name: displayName,
             stats: new Stats
             {
                 MaxHealth = Math.Round(35 * scalingFactor),
@@ -113,6 +114,7 @@ public class FloorGenerator
                 Armor = Math.Round(3 * (floorNumber * 0.15)),
                 AttackSpeed = Math.Round(0.85 + (_rng.NextDouble() * 0.3), 2),
                 CritChance = isElite ? 0.12 : 0.05,
+                CritMultiplier = 1.5,
                 DodgeChance = isElite ? 0.08 : 0.03
             },
             goldReward: (int)Math.Round((10 + floorNumber * 2) * (isElite ? 2.0 : 1.0)),

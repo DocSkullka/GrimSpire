@@ -42,6 +42,11 @@ public class TowerRunManager
             throw new InvalidOperationException("Run is not active or floor not generated.");
         }
 
+        if (CurrentDraftOptions != null)
+        {
+            throw new InvalidOperationException("A draft choice must be selected before initiating next floor combat.");
+        }
+
         var result = Combat.SimulateBattle(Player, CurrentFloor.Enemies);
 
         if (result.PlayerWon)
@@ -66,9 +71,14 @@ public class TowerRunManager
 
     public Item SelectDraftItem(int index)
     {
-        if (CurrentDraftOptions == null || index < 0 || index >= CurrentDraftOptions.Count)
+        if (!IsRunActive || CurrentDraftOptions == null)
         {
-            throw new ArgumentOutOfRangeException(nameof(index), "Invalid draft choice index.");
+            throw new InvalidOperationException("No item draft is currently pending.");
+        }
+
+        if (index < 0 || index >= CurrentDraftOptions.Count)
+        {
+            throw new ArgumentOutOfRangeException(nameof(index), $"Invalid draft choice index {index}. Must be between 0 and {CurrentDraftOptions.Count - 1}.");
         }
 
         var selected = CurrentDraftOptions[index];
@@ -84,5 +94,14 @@ public class TowerRunManager
         Player.Heal(maxHp * 0.25);
 
         return selected;
+    }
+
+    public void AbandonRun()
+    {
+        if (IsRunActive)
+        {
+            IsRunActive = false;
+            Meta.OnRunCompleted(Player.GoldInRun, CurrentFloorNumber);
+        }
     }
 }

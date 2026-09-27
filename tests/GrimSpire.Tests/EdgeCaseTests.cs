@@ -87,4 +87,95 @@ public class EdgeCaseTests
         Assert.True(floorsCleared >= 1);
         Assert.True(meta.PersistentGold >= 0);
     }
+
+    [Fact]
+    public void AttackSpeed_ZeroOrNegative_HandledSafelyWithoutInfiniteLoop()
+    {
+        var player = new Character(new Stats { MaxHealth = 100, AttackDamage = 10, AttackSpeed = -5.0 });
+        var enemy = new Enemy("Slug", new Stats { MaxHealth = 20, AttackDamage = 1, AttackSpeed = 0.0 });
+
+        var engine = new CombatEngine(seed: 42);
+        var result = engine.SimulateBattle(player, new List<Enemy> { enemy });
+
+        // Battle should resolve safely, clamped to at least 0.1 attack speed without hanging
+        Assert.True(result.DurationSeconds > 0);
+        Assert.True(result.PlayerWon || result.PlayerEndingHealth == 0);
+    }
+
+    [Fact]
+    public void Combat_Timeout_TriggersDefeatBySpireMiasma()
+    {
+        // Two immortal tanks with 0 damage will reach 120s timeout
+        var player = new Character(new Stats { MaxHealth = 1000, AttackDamage = 0, AttackSpeed = 1.0 });
+        var enemy = new Enemy("Obsidian Wall", new Stats { MaxHealth = 1000, AttackDamage = 0, AttackSpeed = 1.0 });
+
+        var engine = new CombatEngine(seed: 42);
+        var result = engine.SimulateBattle(player, new List<Enemy> { enemy });
+
+        Assert.False(result.PlayerWon);
+        Assert.Equal(0, player.CurrentHealth);
+        Assert.Contains(result.Events, e => e.Source.Contains("Miasma"));
+    }
+
+    [Fact]
+    public void Combat_ExtremeMultiEnemy_Handles15EnemiesSimultaneously()
+    {
+        var player = new Character(new Stats { MaxHealth = 1500, AttackDamage = 80, AttackSpeed = 2.0, Armor = 30 });
+        var swarm = Enumerable.Range(1, 15)
+            .Select(i => new Enemy($"Swarm #{i}", new Stats { MaxHealth = 40, AttackDamage = 8, AttackSpeed = 0.8 }))
+            .ToList();
+
+        var engine = new CombatEngine(seed: 123);
+        var result = engine.SimulateBattle(player, swarm);
+
+        Assert.True(result.PlayerWon);
+        Assert.True(result.TotalDamageDealt >= 40 * 15);
+        Assert.All(swarm, enemy => Assert.Equal(0, enemy.CurrentHealth));
+    }
+
+    [Fact]
+    public void Combat_DraftPending_ThrowsInvalidOperationExceptionOnSubsequentCombat()
+    {
+        var meta = new MetaProgression();
+        var manager = new TowerRunManager(meta, seed: 100);
+        manager.StartNewRun();
+
+        var firstResult = manager.ExecuteCurrentFloorCombat();
+        Assert.True(firstResult.PlayerWon);
+        Assert.NotNull(manager.CurrentDraftOptions);
+
+        // Attempting to fight again without picking draft must throw
+        Assert.Throws<InvalidOperationException>(() => manager.ExecuteCurrentFloorCombat());
+    }
+
+    [Fact]
+    public void Character_ResetForRun_ResetsHighestFloorReached()
+    {
+        var player = new Character();
+        player.HighestFloorReached = 17;
+
+        player.ResetForRun(Stats.DefaultHero);
+        Assert.Equal(1, player.HighestFloorReached);
+    }
+
+    [Fact]
+    public void ItemDraft_CursedItems_IncludeMeaningfulTradeoffs()
+    {
+        var draftService = new ItemDraftService(seed: 9999);
+        // Force sample high floor drafts until cursed items appear
+        List<Item> cursedItems = new();
+        for (int f = 10; f <= 50; f++)
+        {
+            var draft = draftService.GenerateDraft(f);
+            cursedItems.AddRange(draft.Where(i => i.Rarity == ItemRarity.Cursed));
+            if (cursedItems.Count >= 3) break;
+        }
+
+        Assert.NotEmpty(cursedItems);
+        // Ensure at least one cursed item exhibits a negative penalty stat
+        Assert.Contains(cursedItems, i => 
+            i.StatBonuses.Armor < 0 || 
+            i.StatBonuses.MaxHealth < 0 || 
+            i.StatBonuses.DodgeChance < 0);
+    }
 }

@@ -17,14 +17,30 @@ public class Enemy
 
     public Enemy()
     {
+        Stats = new Stats
+        {
+            MaxHealth = 30,
+            AttackDamage = 5,
+            Armor = 0,
+            AttackSpeed = 1.0,
+            CritChance = 0.05,
+            CritMultiplier = 1.5,
+            DodgeChance = 0.05
+        };
         CurrentHealth = Stats.MaxHealth;
     }
 
     public Enemy(string name, Stats stats, int goldReward = 10, bool isBoss = false, bool isElite = false, string title = "", string ability = "")
     {
         Name = name;
-        Stats = stats;
-        CurrentHealth = stats.MaxHealth;
+        Stats = stats with
+        {
+            MaxHealth = stats.MaxHealth > 0 ? stats.MaxHealth : 30,
+            AttackDamage = stats.AttackDamage > 0 ? stats.AttackDamage : 5,
+            AttackSpeed = stats.AttackSpeed > 0 ? stats.AttackSpeed : 1.0,
+            CritMultiplier = stats.CritMultiplier > 0 ? stats.CritMultiplier : 1.5
+        };
+        CurrentHealth = Stats.MaxHealth;
         GoldReward = goldReward;
         IsBoss = isBoss;
         IsElite = isElite;

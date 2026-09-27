@@ -60,7 +60,7 @@ public class MetaProgression
 
     public Stats CalculateStartingStats()
     {
-        var baseStats = new Stats();
+        var baseStats = Stats.DefaultHero;
 
         return new Stats
         {
