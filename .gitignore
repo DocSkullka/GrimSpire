@@ -42,5 +42,9 @@ $RECYCLE.BIN/
 *.dmp
 *.crash
 
+## Save files
+grimspire_save.json
+user://*.json
+
 ## Test results
 TestResults/
