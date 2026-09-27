@@ -48,14 +48,14 @@ color = Color(0.03, 0.02, 0.04, 0.72)
 [node name="Arena" type="Node2D" parent="."]
 
 [node name="PlayerAnchor" type="Marker2D" parent="Arena"]
-position = Vector2(340, 480)
+position = Vector2(490, 480)
 
 [node name="PlayerSprite" type="Sprite2D" parent="Arena/PlayerAnchor"]
 position = Vector2(0, -180)
 scale = Vector2(0.75, 0.75)
 
 [node name="EnemyAnchor" type="Marker2D" parent="Arena"]
-position = Vector2(940, 480)
+position = Vector2(790, 480)
 
 [node name="EnemySprite" type="Sprite2D" parent="Arena/EnemyAnchor"]
 position = Vector2(0, -180)

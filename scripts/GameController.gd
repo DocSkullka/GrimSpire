@@ -123,8 +123,10 @@ var combat_speed: float = 1.0 # 1.0, 1.5, 2.0
 var player_soul: float = 0.0 # 0.0 to 100.0 (Soul Cleave ability)
 var is_traversing: bool = false
 
-var player_base_pos: Vector2
-var enemy_base_pos: Vector2
+var player_base_pos: Vector2 = Vector2(490, 480)
+var enemy_base_pos: Vector2 = Vector2(790, 480)
+var player_combo_step: int = 0
+var is_hitstopped: bool = false
 
 # Textures
 var tex_spire_interior: Texture2D
@@ -150,6 +152,9 @@ var tex_slash: Texture2D
 var tex_blood: Texture2D
 var tex_archway: Texture2D
 var tex_chest: Texture2D
+var tex_parry_spark: Texture2D
+var tex_heavy_slash: Texture2D
+var tex_ground_shadow: Texture2D
 
 var tex_gear_weapons: Dictionary = {}
 var tex_gear_helms: Dictionary = {}
@@ -159,7 +164,7 @@ var tex_gear_offhands: Dictionary = {}
 var item_icons: Dictionary = {}
 
 # Dynamic Modular Rig Nodes
-var player_shadow: Polygon2D
+var player_shadow: CanvasItem
 var armor_overlay: Sprite2D
 var helm_overlay: Sprite2D
 var offhand_anchor: Marker2D
@@ -169,7 +174,7 @@ var weapon_sprite: Sprite2D
 var accessory_aura: Node2D
 var walk_dust: CPUParticles2D
 
-var enemy_shadow: Polygon2D
+var enemy_shadow: CanvasItem
 var telegraph_glow: Polygon2D
 var enemy_walk_dust: CPUParticles2D
 var archway_sprite: Sprite2D
@@ -199,8 +204,10 @@ func _safe_load_tex(path: String) -> Texture2D:
 
 func _ready():
 	_load_textures()
-	player_base_pos = player_anchor.position
-	enemy_base_pos = enemy_anchor.position
+	player_base_pos = Vector2(490, 480)
+	enemy_base_pos = Vector2(790, 480)
+	player_anchor.position = player_base_pos
+	enemy_anchor.position = enemy_base_pos
 	
 	_build_modular_rigs()
 	_build_enhanced_ui()
@@ -262,6 +269,9 @@ func _load_textures():
 	tex_blood = _safe_load_tex("res://assets/ui/blood_splatter.png")
 	tex_archway = _safe_load_tex("res://assets/ui/dungeon_archway.png")
 	tex_chest = _safe_load_tex("res://assets/ui/treasure_chest.png")
+	tex_parry_spark = _safe_load_tex("res://assets/ui/parry_spark.png")
+	tex_heavy_slash = _safe_load_tex("res://assets/ui/heavy_slash_arc.png")
+	tex_ground_shadow = _safe_load_tex("res://assets/ui/ground_shadow_ellipse.png")
 	
 	# Modular Gear Textures
 	tex_gear_weapons["cleaver"] = _safe_load_tex("res://assets/gear/weapon_cleaver.png")
@@ -313,14 +323,23 @@ func _build_modular_rigs():
 	arena.add_child(chest_sprite)
 	
 	# 2. Player Rig Additions
-	player_shadow = Polygon2D.new()
-	var s_pts = PackedVector2Array()
-	for i in range(16):
-		var ang = float(i) / 16.0 * TAU
-		s_pts.append(Vector2(cos(ang) * 55.0, sin(ang) * 14.0))
-	player_shadow.polygon = s_pts
-	player_shadow.color = Color(0.02, 0.01, 0.03, 0.55)
-	player_shadow.position = Vector2(0, 5)
+	if tex_ground_shadow != null:
+		var p_sh = Sprite2D.new()
+		p_sh.texture = tex_ground_shadow
+		p_sh.position = Vector2(0, 5)
+		p_sh.scale = Vector2(0.55, 0.45)
+		p_sh.modulate = Color(0.04, 0.02, 0.05, 0.75)
+		player_shadow = p_sh
+	else:
+		var p_poly = Polygon2D.new()
+		var s_pts = PackedVector2Array()
+		for i in range(16):
+			var ang = float(i) / 16.0 * TAU
+			s_pts.append(Vector2(cos(ang) * 55.0, sin(ang) * 14.0))
+		p_poly.polygon = s_pts
+		p_poly.color = Color(0.02, 0.01, 0.03, 0.55)
+		p_poly.position = Vector2(0, 5)
+		player_shadow = p_poly
 	player_anchor.add_child(player_shadow)
 	player_anchor.move_child(player_shadow, 0)
 	
@@ -384,14 +403,23 @@ func _build_modular_rigs():
 	player_anchor.add_child(walk_dust)
 	
 	# 3. Enemy Rig Additions
-	enemy_shadow = Polygon2D.new()
-	var e_pts = PackedVector2Array()
-	for i in range(16):
-		var ang = float(i) / 16.0 * TAU
-		e_pts.append(Vector2(cos(ang) * 55.0, sin(ang) * 14.0))
-	enemy_shadow.polygon = e_pts
-	enemy_shadow.color = Color(0.02, 0.01, 0.03, 0.55)
-	enemy_shadow.position = Vector2(0, 5)
+	if tex_ground_shadow != null:
+		var e_sh = Sprite2D.new()
+		e_sh.texture = tex_ground_shadow
+		e_sh.position = Vector2(0, 5)
+		e_sh.scale = Vector2(0.55, 0.45)
+		e_sh.modulate = Color(0.04, 0.02, 0.05, 0.75)
+		enemy_shadow = e_sh
+	else:
+		var e_poly = Polygon2D.new()
+		var e_pts = PackedVector2Array()
+		for i in range(16):
+			var ang = float(i) / 16.0 * TAU
+			e_pts.append(Vector2(cos(ang) * 55.0, sin(ang) * 14.0))
+		e_poly.polygon = e_pts
+		e_poly.color = Color(0.02, 0.01, 0.03, 0.55)
+		e_poly.position = Vector2(0, 5)
+		enemy_shadow = e_poly
 	enemy_anchor.add_child(enemy_shadow)
 	enemy_anchor.move_child(enemy_shadow, 0)
 	
@@ -1004,14 +1032,24 @@ func _process(delta: float):
 	var effective_delta = delta * combat_speed
 	var time = Time.get_ticks_msec() / 1000.0
 	
-	# Idle breathing animations anchored around -180.0
+	# Dynamic breathing and combat stance footsies
 	if not is_traversing:
-		player_sprite.position.y = -180.0 + sin(time * 2.5) * 6.0
-		enemy_sprite.position.y = -180.0 + cos(time * 2.8) * 7.0
+		if state == GameState.BATTLE:
+			player_sprite.position.y = -180.0 + sin(time * 3.6) * 5.0
+			player_sprite.position.x = sin(time * 1.8) * 3.5
+			enemy_sprite.position.y = -180.0 + cos(time * 3.2) * 6.0
+			enemy_sprite.position.x = -cos(time * 1.6) * 3.5
+		else:
+			player_sprite.position.y = -180.0 + sin(time * 2.5) * 6.0
+			player_sprite.position.x = 0.0
+			enemy_sprite.position.y = -180.0 + cos(time * 2.8) * 7.0
+			enemy_sprite.position.x = 0.0
 		if armor_overlay.visible:
 			armor_overlay.position.y = player_sprite.position.y + 10.0
+			armor_overlay.position.x = player_sprite.position.x
 		if helm_overlay.visible:
 			helm_overlay.position.y = player_sprite.position.y - 70.0
+			helm_overlay.position.x = player_sprite.position.x
 		if accessory_aura.visible:
 			accessory_aura.rotation += effective_delta * 1.5
 	
@@ -1473,146 +1511,293 @@ func _update_player_visuals():
 # ==============================================================================
 
 func _execute_player_attack():
-	# Dynamic 3-phase weapon swing
-	var tw = create_tween()
-	# Phase 1: Windup
-	tw.tween_property(weapon_anchor, "rotation_degrees", -65.0, 0.07 / combat_speed)
-	tw.parallel().tween_property(player_anchor, "position:x", player_base_pos.x - 20, 0.07 / combat_speed)
-	# Phase 2: Lunge & Slash
-	tw.tween_property(player_anchor, "position:x", player_base_pos.x + 130, 0.09 / combat_speed)
-	tw.parallel().tween_property(weapon_anchor, "rotation_degrees", 65.0, 0.09 / combat_speed)
-	# Phase 3: Return
-	tw.tween_property(player_anchor, "position:x", player_base_pos.x, 0.12 / combat_speed)
-	tw.parallel().tween_property(weapon_anchor, "rotation_degrees", -20.0, 0.12 / combat_speed)
-	
-	sound_manager.play_slash()
-	_spawn_fx_slash(enemy_anchor.position + Vector2(0, -100))
-	
 	var res = game_data.calculate_damage(player_stats, enemy_data)
 	var e_name = localization.get_enemy_name(enemy_data.get("id", ""), enemy_data.get("name", "Enemy"))
 	if res.dodged:
+		var tw_edodge = create_tween()
+		tw_edodge.tween_property(enemy_anchor, "position:x", enemy_base_pos.x + 60, 0.08 / combat_speed)
+		tw_edodge.tween_property(enemy_anchor, "position:x", enemy_base_pos.x, 0.12 / combat_speed)
 		_spawn_floating_text(enemy_anchor.position + Vector2(0, -140), localization.get_string("float_dodge"), Color(0.4, 0.8, 1.0))
+		_spawn_combat_badge(enemy_anchor.position + Vector2(0, -220), localization.get_string("badge_dodge"), Color(0.05, 0.35, 0.6, 0.9), Color(0.3, 0.8, 1.0, 1.0))
 		_log(localization.get_string("log_enemy_dodge") % e_name)
 		return
-	
+
 	var dmg = res.damage
 	var is_crit = res.is_crit
 	var lifesteal = res.lifesteal
+	var combo_idx = player_combo_step
+	player_combo_step = (player_combo_step + 1) % 3
 	
-	enemy_data["current_health"] = max(0, enemy_data["current_health"] - dmg)
+	match combo_idx:
+		0:
+			_execute_combo_twin_slash(dmg, is_crit, lifesteal, e_name)
+		1:
+			_execute_combo_heavy_thrust(dmg, is_crit, lifesteal, e_name)
+		2:
+			_execute_combo_overhead_cleave(dmg, is_crit, lifesteal, e_name)
+
+func _execute_combo_twin_slash(total_dmg: int, is_crit: bool, lifesteal: int, e_name: String):
+	var dmg1 = max(1, int(round(total_dmg * 0.45)))
+	var dmg2 = max(1, total_dmg - dmg1)
 	
-	# Charge Soul Bar
-	player_soul = min(100.0, player_soul + 18.0)
+	var tw = create_tween()
+	# Hit 1: Quick jab lunge
+	tw.tween_property(player_anchor, "position:x", player_base_pos.x + 75, 0.06 / combat_speed)
+	tw.parallel().tween_property(weapon_anchor, "rotation_degrees", -45.0, 0.06 / combat_speed)
 	
-	_shake_node(enemy_anchor, 8.0 if is_crit else 4.0)
-	_flash_node(enemy_sprite, Color(2.5, 0.5, 0.5, 1))
-	_spawn_blood_burst(enemy_anchor.position + Vector2(0, -100))
+	tw.tween_callback(func():
+		sound_manager.play_slash()
+		_spawn_fx_slash(enemy_anchor.position + Vector2(-20, -110))
+		_flash_node(enemy_sprite, Color(2.5, 0.8, 0.8, 1.0))
+		_shake_node(enemy_anchor, 4.0)
+		_spawn_floating_text(enemy_anchor.position + Vector2(-25, -130), "-%d" % dmg1, Color(1.0, 0.6, 0.6))
+		enemy_data["current_health"] = max(0, enemy_data["current_health"] - dmg1)
+		_update_hud()
+	)
 	
-	if is_crit:
-		sound_manager.play_crit()
-		_spawn_floating_text(enemy_anchor.position + Vector2(0, -140), localization.get_string("float_crit") % dmg, Color(1.0, 0.85, 0.1), 1.4)
-		_log(localization.get_string("log_player_crit") % [e_name, dmg])
-	else:
+	# Hit 2: Immediate follow-up cleave
+	tw.tween_property(player_anchor, "position:x", player_base_pos.x + 115, 0.08 / combat_speed).set_delay(0.04 / combat_speed)
+	tw.parallel().tween_property(weapon_anchor, "rotation_degrees", 75.0, 0.08 / combat_speed)
+	
+	tw.tween_callback(func():
+		if is_crit:
+			sound_manager.play_crit()
+			_spawn_combat_badge(player_anchor.position + Vector2(40, -220), localization.get_string("badge_crit"), Color(0.8, 0.5, 0.0, 0.95), Color(1.0, 0.9, 0.2, 1.0))
+			_spawn_floating_text(enemy_anchor.position + Vector2(25, -145), localization.get_string("float_crit") % dmg2, Color(1.0, 0.85, 0.1), 1.3)
+			_log(localization.get_string("log_player_crit") % [e_name, total_dmg])
+		else:
+			sound_manager.play_hit()
+			_spawn_combat_badge(player_anchor.position + Vector2(40, -220), localization.get_string("badge_combo"), Color(0.1, 0.45, 0.8, 0.9), Color(0.4, 0.8, 1.0, 1.0))
+			_spawn_floating_text(enemy_anchor.position + Vector2(25, -135), "-%d" % dmg2, Color(1.0, 0.3, 0.3))
+			_log(localization.get_string("log_player_hit") % [e_name, total_dmg])
+		
+		_spawn_fx_slash(enemy_anchor.position + Vector2(15, -85), true)
+		_spawn_blood_burst(enemy_anchor.position + Vector2(0, -95))
+		_shake_node(enemy_anchor, 9.0 if is_crit else 5.0)
+		_flash_node(enemy_sprite, Color(3.0, 0.5, 0.5, 1.0))
+		
+		enemy_data["current_health"] = max(0, enemy_data["current_health"] - dmg2)
+		player_soul = min(100.0, player_soul + 20.0)
+		
+		if lifesteal > 0:
+			player_stats["current_health"] = min(player_stats["max_health"], player_stats["current_health"] + lifesteal)
+			_spawn_floating_text(player_anchor.position + Vector2(0, -140), localization.get_string("float_hp") % lifesteal, Color(0.3, 1.0, 0.4))
+		
+		_update_hud()
+		if enemy_data["current_health"] <= 0:
+			_on_enemy_defeated()
+	)
+	
+	# Return to stance
+	tw.tween_property(player_anchor, "position:x", player_base_pos.x, 0.12 / combat_speed).set_delay(0.05 / combat_speed)
+	tw.parallel().tween_property(weapon_anchor, "rotation_degrees", -20.0, 0.12 / combat_speed)
+
+func _execute_combo_heavy_thrust(dmg: int, is_crit: bool, lifesteal: int, e_name: String):
+	var bonus_dmg = int(dmg * 1.15)
+	
+	var tw = create_tween()
+	# Crouch windup
+	tw.tween_property(player_anchor, "position:x", player_base_pos.x - 30, 0.08 / combat_speed)
+	tw.parallel().tween_property(weapon_anchor, "rotation_degrees", -80.0, 0.08 / combat_speed)
+	
+	# Explosive lunge thrust
+	tw.tween_property(player_anchor, "position:x", player_base_pos.x + 140, 0.08 / combat_speed)
+	tw.parallel().tween_property(weapon_anchor, "rotation_degrees", 25.0, 0.08 / combat_speed)
+	
+	tw.tween_callback(func():
+		sound_manager.play_slash()
 		sound_manager.play_hit()
-		_spawn_floating_text(enemy_anchor.position + Vector2(0, -140), "-%d" % dmg, Color(1.0, 0.4, 0.4))
-		_log(localization.get_string("log_player_hit") % [e_name, dmg])
+		_spawn_heavy_slash(enemy_anchor.position + Vector2(-15, -95))
+		_spawn_blood_burst(enemy_anchor.position + Vector2(0, -95))
+		_shake_node(enemy_anchor, 11.0 if is_crit else 8.0)
+		_flash_node(enemy_sprite, Color(3.5, 0.3, 0.3, 1.0))
+		
+		_spawn_combat_badge(player_anchor.position + Vector2(40, -220), localization.get_string("badge_heavy_thrust"), Color(0.75, 0.15, 0.1, 0.95), Color(1.0, 0.45, 0.2, 1.0))
+		
+		if is_crit:
+			sound_manager.play_crit()
+			_spawn_floating_text(enemy_anchor.position + Vector2(0, -150), localization.get_string("float_crit") % bonus_dmg, Color(1.0, 0.85, 0.1), 1.4)
+			_log(localization.get_string("log_player_crit") % [e_name, bonus_dmg])
+		else:
+			_spawn_floating_text(enemy_anchor.position + Vector2(0, -140), "-%d" % bonus_dmg, Color(1.0, 0.3, 0.3), 1.2)
+			_log(localization.get_string("log_player_hit") % [e_name, bonus_dmg])
+		
+		enemy_data["current_health"] = max(0, enemy_data["current_health"] - bonus_dmg)
+		player_soul = min(100.0, player_soul + 22.0)
+		
+		if lifesteal > 0:
+			player_stats["current_health"] = min(player_stats["max_health"], player_stats["current_health"] + lifesteal)
+			_spawn_floating_text(player_anchor.position + Vector2(0, -140), localization.get_string("float_hp") % lifesteal, Color(0.3, 1.0, 0.4))
+		
+		_update_hud()
+		if enemy_data["current_health"] <= 0:
+			_on_enemy_defeated()
+	)
 	
-	if lifesteal > 0:
-		player_stats["current_health"] = min(player_stats["max_health"], player_stats["current_health"] + lifesteal)
-		_spawn_floating_text(player_anchor.position + Vector2(0, -140), localization.get_string("float_hp") % lifesteal, Color(0.3, 1.0, 0.4))
+	# Recoil return
+	tw.tween_property(player_anchor, "position:x", player_base_pos.x, 0.14 / combat_speed).set_delay(0.06 / combat_speed)
+	tw.parallel().tween_property(weapon_anchor, "rotation_degrees", -20.0, 0.14 / combat_speed)
+
+func _execute_combo_overhead_cleave(dmg: int, is_crit: bool, lifesteal: int, e_name: String):
+	var tw = create_tween()
+	# Leap into air
+	tw.tween_property(player_anchor, "position", player_base_pos + Vector2(50, -40), 0.10 / combat_speed)
+	tw.parallel().tween_property(weapon_anchor, "rotation_degrees", -100.0, 0.10 / combat_speed)
+	if player_shadow != null:
+		tw.parallel().tween_property(player_shadow, "scale", Vector2(0.40, 0.32), 0.10 / combat_speed)
 	
-	_update_hud()
+	# Downward cleave impact
+	tw.tween_property(player_anchor, "position", player_base_pos + Vector2(105, 0), 0.08 / combat_speed)
+	tw.parallel().tween_property(weapon_anchor, "rotation_degrees", 80.0, 0.08 / combat_speed)
+	if player_shadow != null:
+		tw.parallel().tween_property(player_shadow, "scale", Vector2(0.55, 0.45), 0.08 / combat_speed)
 	
-	if enemy_data["current_health"] <= 0:
-		_on_enemy_defeated()
+	tw.tween_callback(func():
+		sound_manager.play_slash()
+		sound_manager.play_hit()
+		_spawn_heavy_slash(enemy_anchor.position + Vector2(0, -90), false, PI * 0.2)
+		_spawn_blood_burst(enemy_anchor.position + Vector2(0, -90))
+		_shake_node(enemy_anchor, 10.0 if is_crit else 6.0)
+		_flash_node(enemy_sprite, Color(3.0, 0.4, 0.4, 1.0))
+		if enemy_walk_dust:
+			enemy_walk_dust.restart()
+		
+		_spawn_combat_badge(player_anchor.position + Vector2(40, -220), localization.get_string("badge_cleave"), Color(0.5, 0.1, 0.6, 0.95), Color(0.85, 0.4, 1.0, 1.0))
+		
+		if is_crit:
+			sound_manager.play_crit()
+			_spawn_floating_text(enemy_anchor.position + Vector2(0, -150), localization.get_string("float_crit") % dmg, Color(1.0, 0.85, 0.1), 1.4)
+			_log(localization.get_string("log_player_crit") % [e_name, dmg])
+		else:
+			_spawn_floating_text(enemy_anchor.position + Vector2(0, -140), "-%d" % dmg, Color(1.0, 0.4, 0.4), 1.1)
+			_log(localization.get_string("log_player_hit") % [e_name, dmg])
+		
+		enemy_data["current_health"] = max(0, enemy_data["current_health"] - dmg)
+		player_soul = min(100.0, player_soul + 25.0)
+		
+		if lifesteal > 0:
+			player_stats["current_health"] = min(player_stats["max_health"], player_stats["current_health"] + lifesteal)
+			_spawn_floating_text(player_anchor.position + Vector2(0, -140), localization.get_string("float_hp") % lifesteal, Color(0.3, 1.0, 0.4))
+		
+		_update_hud()
+		if enemy_data["current_health"] <= 0:
+			_on_enemy_defeated()
+	)
+	
+	# Step back
+	tw.tween_property(player_anchor, "position", player_base_pos, 0.12 / combat_speed).set_delay(0.05 / combat_speed)
+	tw.parallel().tween_property(weapon_anchor, "rotation_degrees", -20.0, 0.12 / combat_speed)
 
 func _execute_player_soul_cleave():
 	player_soul = 0.0
 	sound_manager.play_soul()
 	
-	# Dramatic leap into the air
 	var tw = create_tween()
-	tw.tween_property(player_anchor, "position", player_base_pos + Vector2(100, -70), 0.12 / combat_speed)
-	tw.parallel().tween_property(weapon_anchor, "rotation_degrees", -90.0, 0.12 / combat_speed)
+	# Hero dashes straight into enemy space and leaps
+	tw.tween_property(player_anchor, "position", player_base_pos + Vector2(130, -55), 0.11 / combat_speed)
+	tw.parallel().tween_property(weapon_anchor, "rotation_degrees", -180.0, 0.11 / combat_speed)
 	
-	tw.tween_property(player_anchor, "position", player_base_pos + Vector2(160, 0), 0.10 / combat_speed)
-	tw.parallel().tween_property(weapon_anchor, "rotation_degrees", 90.0, 0.10 / combat_speed)
+	# Full 360 whirlwind spin cleave
+	tw.tween_property(player_anchor, "position", player_base_pos + Vector2(150, 0), 0.10 / combat_speed)
+	tw.parallel().tween_property(weapon_anchor, "rotation_degrees", 180.0, 0.10 / combat_speed)
 	
-	tw.tween_property(player_anchor, "position", player_base_pos, 0.15 / combat_speed)
-	tw.parallel().tween_property(weapon_anchor, "rotation_degrees", -20.0, 0.15 / combat_speed)
+	tw.tween_callback(func():
+		_spawn_heavy_slash(enemy_anchor.position + Vector2(0, -95), false, 0.0)
+		_spawn_heavy_slash(enemy_anchor.position + Vector2(0, -75), true, PI * 0.45)
+		_spawn_blood_burst(enemy_anchor.position + Vector2(-20, -90))
+		_spawn_blood_burst(enemy_anchor.position + Vector2(20, -100))
+		
+		_shake_node(enemy_anchor, 15.0)
+		_flash_node(enemy_sprite, Color(3.5, 0.3, 2.5, 1.0))
+		
+		_spawn_combat_badge(player_anchor.position + Vector2(50, -230), localization.get_string("badge_soul_cleave"), Color(0.65, 0.05, 0.75, 0.95), Color(1.0, 0.85, 0.2, 1.0))
+		
+		var p_dmg = int(player_stats.get("attack_damage", 15) * 2.5)
+		enemy_data["current_health"] = max(0, enemy_data["current_health"] - p_dmg)
+		_spawn_floating_text(enemy_anchor.position + Vector2(0, -155), localization.get_string("float_soul") % p_dmg, Color(0.95, 0.4, 1.0), 1.6)
+		_log(localization.get_string("log_player_soul") % p_dmg)
+		_update_hud()
+		
+		if enemy_data["current_health"] <= 0:
+			_on_enemy_defeated()
+	)
 	
-	_spawn_fx_slash(enemy_anchor.position + Vector2(0, -100))
-	_spawn_fx_slash(enemy_anchor.position + Vector2(0, -70), true)
-	
-	var p_dmg = int(player_stats.get("attack_damage", 15) * 2.5)
-	enemy_data["current_health"] = max(0, enemy_data["current_health"] - p_dmg)
-	
-	_shake_node(enemy_anchor, 12.0)
-	_flash_node(enemy_sprite, Color(3.0, 0.4, 2.0, 1))
-	_spawn_blood_burst(enemy_anchor.position + Vector2(0, -90))
-	_spawn_floating_text(enemy_anchor.position + Vector2(0, -150), localization.get_string("float_soul") % p_dmg, Color(0.9, 0.4, 1.0), 1.5)
-	
-	_log(localization.get_string("log_player_soul") % p_dmg)
-	_update_hud()
-	
-	if enemy_data["current_health"] <= 0:
-		_on_enemy_defeated()
+	# Recovery return to base pos
+	tw.tween_property(player_anchor, "position", player_base_pos, 0.14 / combat_speed).set_delay(0.08 / combat_speed)
+	tw.parallel().tween_property(weapon_anchor, "rotation_degrees", -20.0, 0.14 / combat_speed)
 
 func _execute_enemy_attack():
 	# Telegraph flash before lunge
 	telegraph_glow.visible = true
 	var tw_tel = create_tween()
-	tw_tel.tween_property(telegraph_glow, "modulate:a", 1.0, 0.08 / combat_speed)
-	tw_tel.tween_property(telegraph_glow, "modulate:a", 0.0, 0.08 / combat_speed)
+	tw_tel.tween_property(telegraph_glow, "modulate:a", 1.0, 0.07 / combat_speed)
+	tw_tel.tween_property(telegraph_glow, "modulate:a", 0.0, 0.07 / combat_speed)
 	tw_tel.tween_callback(func(): telegraph_glow.visible = false)
 	
-	# Enemy lunges forward
+	# Enemy lunges forward into physical striking range
 	var tw = create_tween()
-	tw.tween_property(enemy_anchor, "position:x", enemy_base_pos.x - 120, 0.10 / combat_speed)
-	tw.tween_property(enemy_anchor, "position:x", enemy_base_pos.x, 0.14 / combat_speed)
-	
-	sound_manager.play_slash()
-	_spawn_fx_slash(player_anchor.position + Vector2(0, -100), true)
+	tw.tween_property(enemy_anchor, "position:x", enemy_base_pos.x - 120, 0.09 / combat_speed)
 	
 	var res = game_data.calculate_damage(enemy_data, player_stats)
 	var e_name = localization.get_enemy_name(enemy_data.get("id", ""), enemy_data.get("name", "Enemy"))
+	
 	if res.dodged:
-		# Player back-dash dodge
+		# Player rapid shadow roll / backdash dodge
 		var tw_dodge = create_tween()
-		tw_dodge.tween_property(player_anchor, "position:x", player_base_pos.x - 60, 0.08 / combat_speed)
+		tw_dodge.tween_property(player_anchor, "position:x", player_base_pos.x - 65, 0.07 / combat_speed)
 		tw_dodge.tween_property(player_anchor, "position:x", player_base_pos.x, 0.12 / combat_speed)
+		_spawn_combat_badge(player_anchor.position + Vector2(-30, -210), localization.get_string("badge_dodge"), Color(0.05, 0.35, 0.6, 0.9), Color(0.3, 0.8, 1.0, 1.0))
 		_spawn_floating_text(player_anchor.position + Vector2(0, -140), localization.get_string("float_dodge"), Color(0.4, 0.8, 1.0))
 		_log(localization.get_string("log_player_dodge") % e_name)
+		
+		# Enemy misses and returns
+		tw.tween_property(enemy_anchor, "position:x", enemy_base_pos.x, 0.12 / combat_speed).set_delay(0.05 / combat_speed)
 		return
 	
 	var dmg = res.damage
 	var is_blocked = res.get("is_blocked", false)
 	
 	if is_blocked and offhand_sprite.visible:
-		# Shield raise block animation
+		# Shield raise & parry clash
 		var tw_block = create_tween()
-		tw_block.tween_property(offhand_anchor, "position:x", -15.0, 0.06 / combat_speed)
-		tw_block.tween_property(offhand_anchor, "position:x", -45.0, 0.10 / combat_speed)
-		sound_manager.play_block()
-		_spawn_floating_text(player_anchor.position + Vector2(0, -140), localization.get_string("float_block"), Color(0.5, 0.85, 1.0))
-		_log(localization.get_string("log_player_block"))
+		tw_block.tween_property(offhand_anchor, "position:x", -10.0, 0.05 / combat_speed)
+		tw_block.tween_property(offhand_anchor, "position:x", -45.0, 0.12 / combat_speed)
+		
+		tw.tween_callback(func():
+			sound_manager.play_block()
+			_spawn_parry_spark(player_anchor.position + Vector2(40, -140))
+			_spawn_combat_badge(player_anchor.position + Vector2(-20, -215), localization.get_string("badge_parry"), Color(0.7, 0.5, 0.05, 0.95), Color(1.0, 0.9, 0.3, 1.0))
+			_spawn_floating_text(player_anchor.position + Vector2(0, -140), localization.get_string("float_block"), Color(0.5, 0.85, 1.0))
+			_log(localization.get_string("log_player_block"))
+			
+			# Hero recoil
+			_shake_node(player_anchor, 4.0)
+			player_stats["current_health"] = max(0, player_stats["current_health"] - dmg)
+			player_soul = min(100.0, player_soul + 12.0)
+			_update_hud()
+			if player_stats["current_health"] <= 0:
+				_on_player_perished()
+		)
 	else:
-		sound_manager.play_hit()
+		tw.tween_callback(func():
+			sound_manager.play_hit()
+			_spawn_fx_slash(player_anchor.position + Vector2(0, -100), true)
+			_spawn_blood_burst(player_anchor.position + Vector2(0, -100))
+			_shake_node(player_anchor, 6.0)
+			_flash_node(player_sprite, Color(2.5, 0.4, 0.4, 1.0))
+			
+			_spawn_floating_text(player_anchor.position + Vector2(0, -140), "-%d" % dmg, Color(1.0, 0.2, 0.2))
+			_log(localization.get_string("log_enemy_hit") % [e_name, dmg])
+			
+			player_stats["current_health"] = max(0, player_stats["current_health"] - dmg)
+			player_soul = min(100.0, player_soul + 10.0)
+			_update_hud()
+			if player_stats["current_health"] <= 0:
+				_on_player_perished()
+		)
 	
-	player_stats["current_health"] = max(0, player_stats["current_health"] - dmg)
-	player_soul = min(100.0, player_soul + 10.0)
-	
-	_shake_node(player_anchor, 6.0)
-	_flash_node(player_sprite, Color(2, 0.4, 0.4, 1))
-	_spawn_blood_burst(player_anchor.position + Vector2(0, -100))
-	
-	_spawn_floating_text(player_anchor.position + Vector2(0, -140), "-%d" % dmg, Color(1.0, 0.2, 0.2))
-	_log(localization.get_string("log_enemy_hit") % [e_name, dmg])
-	
-	_update_hud()
-	
-	if player_stats["current_health"] <= 0:
-		_on_player_perished()
+	# Enemy returns to base position
+	tw.tween_property(enemy_anchor, "position:x", enemy_base_pos.x, 0.13 / combat_speed).set_delay(0.06 / combat_speed)
 
 func _on_enemy_defeated():
 	sound_manager.play_room_clear()
@@ -1642,7 +1827,7 @@ func _on_enemy_defeated():
 	walk_dust.emitting = true
 	sound_manager.play_step()
 	
-	tw.tween_property(player_anchor, "position:x", 520.0, 0.55).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+	tw.tween_property(player_anchor, "position:x", 580.0, 0.55).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
 	tw.tween_callback(func():
 		walk_dust.emitting = false
 		_enter_draft_state()
@@ -2170,6 +2355,81 @@ func _spawn_floating_text(pos: Vector2, text: String, color: Color, scale_mult: 
 	tw.tween_property(lbl, "position:y", lbl.position.y - 50, 0.6).set_ease(Tween.EASE_OUT)
 	tw.parallel().tween_property(lbl, "modulate:a", 0.0, 0.6)
 	tw.tween_callback(lbl.queue_free)
+
+func _spawn_combat_badge(pos: Vector2, text: String, bg_color: Color, border_color: Color):
+	var panel = PanelContainer.new()
+	panel.position = pos - Vector2(100, 20)
+	panel.custom_minimum_size = Vector2(200, 32)
+	
+	var style = StyleBoxFlat.new()
+	style.bg_color = bg_color
+	style.border_color = border_color
+	style.border_width_left = 2
+	style.border_width_top = 2
+	style.border_width_right = 2
+	style.border_width_bottom = 2
+	style.corner_radius_top_left = 6
+	style.corner_radius_top_right = 6
+	style.corner_radius_bottom_left = 6
+	style.corner_radius_bottom_right = 6
+	style.content_margin_left = 10
+	style.content_margin_right = 10
+	style.content_margin_top = 4
+	style.content_margin_bottom = 4
+	panel.add_theme_stylebox_override("panel", style)
+	
+	var lbl = Label.new()
+	lbl.text = text
+	lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	lbl.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	lbl.add_theme_font_size_override("font_size", 12)
+	lbl.add_theme_color_override("font_color", Color(1, 1, 1, 1))
+	panel.add_child(lbl)
+	
+	fx_layer.add_child(panel)
+	
+	panel.scale = Vector2(0.6, 0.6)
+	panel.pivot_offset = Vector2(100, 16)
+	var tw = create_tween()
+	tw.tween_property(panel, "scale", Vector2(1.15, 1.15), 0.1).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	tw.tween_property(panel, "scale", Vector2(1.0, 1.0), 0.08)
+	tw.tween_property(panel, "position:y", panel.position.y - 32.0, 0.45).set_delay(0.2)
+	tw.parallel().tween_property(panel, "modulate:a", 0.0, 0.4).set_delay(0.25)
+	tw.tween_callback(panel.queue_free)
+
+func _spawn_parry_spark(pos: Vector2):
+	if tex_parry_spark == null:
+		return
+	var s = Sprite2D.new()
+	s.texture = tex_parry_spark
+	s.position = pos
+	s.scale = Vector2(0.6, 0.6)
+	s.modulate = Color(1.6, 1.4, 0.9, 1.0)
+	fx_layer.add_child(s)
+	
+	var tw = create_tween().set_parallel(true)
+	tw.tween_property(s, "scale", Vector2(1.35, 1.35), 0.15).set_trans(Tween.TRANS_EXPO).set_ease(Tween.EASE_OUT)
+	tw.tween_property(s, "rotation", randf_range(-0.5, 0.5), 0.15)
+	tw.tween_property(s, "modulate:a", 0.0, 0.15)
+	tw.chain().tween_callback(s.queue_free)
+
+func _spawn_heavy_slash(pos: Vector2, flipped: bool = false, rot: float = 0.0):
+	if tex_heavy_slash == null:
+		_spawn_fx_slash(pos, flipped)
+		return
+	var s = Sprite2D.new()
+	s.texture = tex_heavy_slash
+	s.position = pos
+	s.scale = Vector2(0.85, 0.85)
+	s.flip_h = flipped
+	s.rotation = rot
+	s.modulate = Color(1.6, 1.3, 0.8, 1.0)
+	fx_layer.add_child(s)
+	
+	var tw = create_tween().set_parallel(true)
+	tw.tween_property(s, "scale", Vector2(1.4, 1.4), 0.18).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+	tw.tween_property(s, "modulate:a", 0.0, 0.18)
+	tw.chain().tween_callback(s.queue_free)
 
 func _log(bbcode: String):
 	combat_log.append_text(bbcode + "\n")
