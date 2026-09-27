@@ -91,19 +91,3 @@ D:\GrimSpire\
    ```bash
    dotnet run --project src/GrimSpire.Cli
    ```
-
----
-
-## 🔐 GitHub & SSH Настройка
-
-Репозиторий настроен на пользователя **DocSkullka**:
-- SSH Remote URL: `git@github.com:DocSkullka/GrimSpire.git`
-- SSH Key: `C:/Users/DocSk/.ssh/id_ed25519`
-- Git Author: `DocSkullka <docskullka@gmail.com>`
-
-### Пуш в свой GitHub:
-1. Создайте пустой репозиторий `GrimSpire` на [github.com/new](https://github.com/new) под аккаунтом `DocSkullka`.
-2. Выполните команду в корне `D:\GrimSpire`:
-   ```bash
-   git push -u origin main
-   ```
