@@ -1,0 +1,47 @@
+[
+  {
+    "id": "feeble_skeleton",
+    "name": "Feeble Skeleton",
+    "tier": "Tier 1 (Floor 1)",
+    "description": "Fragile bones clattering in the cold wind of the Spire base.",
+    "stats": { "MaxHealth": 30, "AttackDamage": 4, "Armor": 0, "AttackSpeed": 0.8 },
+    "goldReward": 15,
+    "isBoss": false
+  },
+  {
+    "id": "spire_imp",
+    "name": "Spire Imp",
+    "tier": "Tier 1 (Floors 2-5)",
+    "description": "Cackling creature with obsidian claws that leaps from rafters.",
+    "stats": { "MaxHealth": 45, "AttackDamage": 8, "Armor": 2, "AttackSpeed": 1.2, "DodgeChance": 0.08 },
+    "goldReward": 20,
+    "isBoss": false
+  },
+  {
+    "id": "hollow_knight",
+    "name": "Hollow Knight",
+    "tier": "Tier 2 (Floors 5-9)",
+    "description": "Suit of rusted gothic plate armor propelled by malevolent spirits.",
+    "stats": { "MaxHealth": 90, "AttackDamage": 14, "Armor": 12, "AttackSpeed": 0.9 },
+    "goldReward": 35,
+    "isBoss": false
+  },
+  {
+    "id": "boss_gargoyle",
+    "name": "Gargoyle Overseer Malgorath",
+    "tier": "Boss (Floor 10)",
+    "description": "Colossal stone monstrosity perched atop the 10th tier threshold. Summons shockwaves.",
+    "stats": { "MaxHealth": 320, "AttackDamage": 26, "Armor": 28, "AttackSpeed": 1.1, "CritChance": 0.15, "Lifesteal": 0.10 },
+    "goldReward": 250,
+    "isBoss": true
+  },
+  {
+    "id": "boss_flesh_amalgam",
+    "name": "The Flesh Amalgam of Sorrow",
+    "tier": "Boss (Floor 20)",
+    "description": "Writhing mass of stitched bodies and wailing faces that secretes virulent venom.",
+    "stats": { "MaxHealth": 680, "AttackDamage": 48, "Armor": 45, "AttackSpeed": 1.0, "CritChance": 0.20, "Lifesteal": 0.15 },
+    "goldReward": 500,
+    "isBoss": true
+  }
+]

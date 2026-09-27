@@ -1,0 +1,46 @@
+## Build and binary directories
+bin/
+obj/
+*.dll
+*.exe
+*.pdb
+
+## IDE and Editor files
+.vs/
+.vscode/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+.idea/
+
+## Godot Engine
+.godot/
+*.translation
+export/
+export_presets.cfg
+
+## Unity (if utilized)
+[Ll]ibrary/
+[Tt]emp/
+[Oo]bj/
+[Bb]uild/
+[Bb]uilds/
+[Ll]ogs/
+[Uu]ser[Ss]ettings/
+[Mm]emoryCaptures/
+
+## OS generated
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+.DS_Store
+
+## Logs and crash dumps
+*.log
+*.dmp
+*.crash
+
+## Test results
+TestResults/

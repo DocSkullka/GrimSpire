@@ -1,0 +1,58 @@
+[
+  {
+    "type": "Health",
+    "name": "Titanic Vigor",
+    "description": "Increases permanent starting Max Health by +12 HP per rank.",
+    "baseCost": 50,
+    "costScaling": "50 * (rank + 1)",
+    "statBonus": "+12 Max HP per rank"
+  },
+  {
+    "type": "Damage",
+    "name": "Brutal Edge",
+    "description": "Increases permanent starting Attack Damage by +2.5 DMG per rank.",
+    "baseCost": 60,
+    "costScaling": "60 * (rank + 1)",
+    "statBonus": "+2.5 DMG per rank"
+  },
+  {
+    "type": "Armor",
+    "name": "Iron Hide",
+    "description": "Increases permanent starting Armor by +2.0 per rank.",
+    "baseCost": 55,
+    "costScaling": "55 * (rank + 1)",
+    "statBonus": "+2.0 Armor per rank"
+  },
+  {
+    "type": "AttackSpeed",
+    "name": "Frenzied Reflexes",
+    "description": "Increases permanent starting Attack Speed by +0.05 attacks/sec per rank.",
+    "baseCost": 75,
+    "costScaling": "75 * (rank + 1)",
+    "statBonus": "+0.05 Attack Speed per rank"
+  },
+  {
+    "type": "CritChance",
+    "name": "Anatomy of Slaughter",
+    "description": "Increases permanent starting Critical Strike Chance by +1% per rank.",
+    "baseCost": 80,
+    "costScaling": "80 * (rank + 1)",
+    "statBonus": "+1% Crit Chance per rank"
+  },
+  {
+    "type": "Lifesteal",
+    "name": "Vampiric Hunger",
+    "description": "Increases permanent starting Lifesteal by +1% per rank.",
+    "baseCost": 100,
+    "costScaling": "100 * (rank + 1)",
+    "statBonus": "+1% Lifesteal per rank"
+  },
+  {
+    "type": "GoldMultiplier",
+    "name": "Greed of the Fallen",
+    "description": "Increases all gold earned in runs by +8% per rank.",
+    "baseCost": 70,
+    "costScaling": "70 * (rank + 1)",
+    "statBonus": "+8% Gold per rank"
+  }
+]

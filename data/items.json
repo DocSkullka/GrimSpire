@@ -1,0 +1,74 @@
+[
+  {
+    "id": "rusty_blade",
+    "name": "Rusty Spire Cleaver",
+    "slot": "Weapon",
+    "rarity": "Common",
+    "description": "A jagged piece of rusty iron, scarred by countless executions.",
+    "stats": { "AttackDamage": 10, "AttackSpeed": 0.05 }
+  },
+  {
+    "id": "executioner_axe",
+    "name": "Headsman's Crescent",
+    "slot": "Weapon",
+    "rarity": "Rare",
+    "description": "Heavy dark-steel blade that yearns for vertebrae.",
+    "stats": { "AttackDamage": 24, "CritChance": 0.12, "CritMultiplier": 0.4 }
+  },
+  {
+    "id": "blood_scythe",
+    "name": "Harvester of the Damned",
+    "slot": "Weapon",
+    "rarity": "Legendary",
+    "description": "Pulses with the stolen heartbeats of fallen climbers.",
+    "stats": { "AttackDamage": 45, "AttackSpeed": 0.25, "Lifesteal": 0.18, "CritChance": 0.15 }
+  },
+  {
+    "id": "bone_carapace",
+    "name": "Carapace of the Unburied",
+    "slot": "Armor",
+    "rarity": "Uncommon",
+    "description": "Ribcages of ancient foes stitched with rusted wire.",
+    "stats": { "MaxHealth": 50, "Armor": 12 }
+  },
+  {
+    "id": "abyssal_shroud",
+    "name": "Shroud of the Void Stalker",
+    "slot": "Armor",
+    "rarity": "Epic",
+    "description": "Dark cloth woven from shadows that swallows incoming strikes.",
+    "stats": { "MaxHealth": 110, "Armor": 22, "DodgeChance": 0.10 }
+  },
+  {
+    "id": "iron_sallet",
+    "name": "Spire Sentry Helm",
+    "slot": "Helmet",
+    "rarity": "Common",
+    "description": "Narrow slit visor with dried blood along the rim.",
+    "stats": { "MaxHealth": 25, "Armor": 6 }
+  },
+  {
+    "id": "crown_of_thorns",
+    "name": "Martyr's Jagged Crown",
+    "slot": "Helmet",
+    "rarity": "Cursed",
+    "description": "Pierces the wearer's skull, granting terrifying lethality at great agony.",
+    "stats": { "AttackDamage": 30, "CritChance": 0.20, "Armor": -5 }
+  },
+  {
+    "id": "weeping_shield",
+    "name": "Buckler of the Weeping Mother",
+    "slot": "OffHand",
+    "rarity": "Rare",
+    "description": "Embossed with a sorrowful face that deflects heavy impacts.",
+    "stats": { "Armor": 18, "DodgeChance": 0.08, "MaxHealth": 40 }
+  },
+  {
+    "id": "bloodstone_amulet",
+    "name": "Gargoyle Eye Talisman",
+    "slot": "Accessory",
+    "rarity": "Epic",
+    "description": "Carved from the ocular stone of the Floor 10 sentinel.",
+    "stats": { "Lifesteal": 0.12, "CritChance": 0.10, "AttackDamage": 14 }
+  }
+]
