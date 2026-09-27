@@ -4,26 +4,71 @@
     "name": "Feeble Skeleton",
     "tier": "Tier 1 (Floor 1)",
     "description": "Fragile bones clattering in the cold wind of the Spire base.",
-    "stats": { "MaxHealth": 30, "AttackDamage": 4, "Armor": 0, "AttackSpeed": 0.8 },
+    "stats": { "MaxHealth": 32, "AttackDamage": 5, "Armor": 0, "AttackSpeed": 0.85 },
     "goldReward": 15,
     "isBoss": false
   },
   {
     "id": "spire_imp",
     "name": "Spire Imp",
-    "tier": "Tier 1 (Floors 2-5)",
+    "tier": "Tier 1 (Floors 2-3)",
     "description": "Cackling creature with obsidian claws that leaps from rafters.",
-    "stats": { "MaxHealth": 45, "AttackDamage": 8, "Armor": 2, "AttackSpeed": 1.2, "DodgeChance": 0.08 },
-    "goldReward": 20,
+    "stats": { "MaxHealth": 48, "AttackDamage": 8, "Armor": 2, "AttackSpeed": 1.25, "DodgeChance": 0.08 },
+    "goldReward": 22,
+    "isBoss": false
+  },
+  {
+    "id": "crypt_ghoul",
+    "name": "Crypt Ghoul",
+    "tier": "Tier 1 (Floors 3-4)",
+    "description": "Feral flesh-eating scavenger that feasts upon fallen adventurers.",
+    "stats": { "MaxHealth": 65, "AttackDamage": 11, "Armor": 4, "AttackSpeed": 1.05, "Lifesteal": 0.12 },
+    "goldReward": 28,
+    "isBoss": false
+  },
+  {
+    "id": "tormented_shade",
+    "name": "Tormented Shade",
+    "tier": "Tier 1 (Floor 4)",
+    "description": "Spectral phantom weaving between planes, ignoring physical defense.",
+    "stats": { "MaxHealth": 55, "AttackDamage": 13, "Armor": 0, "AttackSpeed": 1.15, "DodgeChance": 0.16 },
+    "goldReward": 32,
     "isBoss": false
   },
   {
     "id": "hollow_knight",
     "name": "Hollow Knight",
-    "tier": "Tier 2 (Floors 5-9)",
+    "tier": "Tier 2 (Floors 5-7)",
     "description": "Suit of rusted gothic plate armor propelled by malevolent spirits.",
-    "stats": { "MaxHealth": 90, "AttackDamage": 14, "Armor": 12, "AttackSpeed": 0.9 },
-    "goldReward": 35,
+    "stats": { "MaxHealth": 105, "AttackDamage": 16, "Armor": 14, "AttackSpeed": 0.9 },
+    "goldReward": 40,
+    "isBoss": false
+  },
+  {
+    "id": "blood_cultist",
+    "name": "Blood Cultist Zealot",
+    "tier": "Tier 2 (Floors 6-8)",
+    "description": "Robed acolyte offering dark incantations and sacrificing vitality for power.",
+    "stats": { "MaxHealth": 85, "AttackDamage": 20, "Armor": 6, "AttackSpeed": 1.1, "CritChance": 0.12 },
+    "goldReward": 45,
+    "isBoss": false
+  },
+  {
+    "id": "obsidian_gargoyle",
+    "name": "Obsidian Sentry Gargoyle",
+    "tier": "Tier 2 (Floors 8-9)",
+    "description": "Living stone guardian perched atop high buttresses, deflecting blows.",
+    "stats": { "MaxHealth": 140, "AttackDamage": 18, "Armor": 22, "AttackSpeed": 0.85 },
+    "goldReward": 55,
+    "isBoss": false
+  },
+  {
+    "id": "plague_abomination",
+    "name": "Rotting Plague Abomination",
+    "tier": "Miniboss (Floor 9)",
+    "description": "Bloated necrotic juggernaut dripping foul bile and toxic pustules.",
+    "stats": { "MaxHealth": 220, "AttackDamage": 22, "Armor": 12, "AttackSpeed": 0.95, "Lifesteal": 0.08 },
+    "goldReward": 90,
     "isBoss": false
   },
   {
@@ -31,17 +76,71 @@
     "name": "Gargoyle Overseer Malgorath",
     "tier": "Boss (Floor 10)",
     "description": "Colossal stone monstrosity perched atop the 10th tier threshold. Summons shockwaves.",
-    "stats": { "MaxHealth": 320, "AttackDamage": 26, "Armor": 28, "AttackSpeed": 1.1, "CritChance": 0.15, "Lifesteal": 0.10 },
+    "stats": { "MaxHealth": 340, "AttackDamage": 28, "Armor": 28, "AttackSpeed": 1.1, "CritChance": 0.15, "Lifesteal": 0.10 },
     "goldReward": 250,
     "isBoss": true
+  },
+  {
+    "id": "cursed_inquisitor",
+    "name": "Cursed Inquisitor",
+    "tier": "Tier 3 (Floors 11-13)",
+    "description": "Fallen templar purging all trespassers with blackened sacred fire.",
+    "stats": { "MaxHealth": 180, "AttackDamage": 30, "Armor": 18, "AttackSpeed": 1.05, "CritChance": 0.14 },
+    "goldReward": 85,
+    "isBoss": false
+  },
+  {
+    "id": "spire_executioner",
+    "name": "Spire Headsman",
+    "tier": "Tier 3 (Floors 14-16)",
+    "description": "Immense hooded brute swinging a guillotine-sized executioner axe.",
+    "stats": { "MaxHealth": 260, "AttackDamage": 42, "Armor": 15, "AttackSpeed": 0.75, "CritChance": 0.20, "CritMultiplier": 0.5 },
+    "goldReward": 115,
+    "isBoss": false
+  },
+  {
+    "id": "crypt_lich",
+    "name": "Crypt Arch-Lich",
+    "tier": "Tier 3 (Floors 17-19)",
+    "description": "Ancient sorcerer defying death with unholy blood phylacteries.",
+    "stats": { "MaxHealth": 230, "AttackDamage": 38, "Armor": 10, "AttackSpeed": 1.15, "Lifesteal": 0.18, "DodgeChance": 0.10 },
+    "goldReward": 140,
+    "isBoss": false
   },
   {
     "id": "boss_flesh_amalgam",
     "name": "The Flesh Amalgam of Sorrow",
     "tier": "Boss (Floor 20)",
     "description": "Writhing mass of stitched bodies and wailing faces that secretes virulent venom.",
-    "stats": { "MaxHealth": 680, "AttackDamage": 48, "Armor": 45, "AttackSpeed": 1.0, "CritChance": 0.20, "Lifesteal": 0.15 },
+    "stats": { "MaxHealth": 720, "AttackDamage": 52, "Armor": 45, "AttackSpeed": 1.0, "CritChance": 0.20, "Lifesteal": 0.15 },
     "goldReward": 500,
+    "isBoss": true
+  },
+  {
+    "id": "void_stalker",
+    "name": "Eldritch Void Stalker",
+    "tier": "Tier 4 (Floors 21-25)",
+    "description": "Creature from the depths between worlds that blinks across space.",
+    "stats": { "MaxHealth": 380, "AttackDamage": 60, "Armor": 22, "AttackSpeed": 1.35, "DodgeChance": 0.20, "CritChance": 0.22 },
+    "goldReward": 220,
+    "isBoss": false
+  },
+  {
+    "id": "infernal_colossus",
+    "name": "Infernal Dreadnought",
+    "tier": "Tier 4 (Floors 26-29)",
+    "description": "Animated molten iron fortress burning with unquenchable hellfire.",
+    "stats": { "MaxHealth": 540, "AttackDamage": 70, "Armor": 50, "AttackSpeed": 0.85 },
+    "goldReward": 300,
+    "isBoss": false
+  },
+  {
+    "id": "boss_valthor",
+    "name": "Valthor the Soul Extinguisher",
+    "tier": "Final Boss (Floor 30)",
+    "description": "The immortal architect of the Grim Spire, sovereign ruler of death.",
+    "stats": { "MaxHealth": 1400, "AttackDamage": 95, "Armor": 65, "AttackSpeed": 1.2, "CritChance": 0.25, "Lifesteal": 0.20, "DodgeChance": 0.10 },
+    "goldReward": 1200,
     "isBoss": true
   }
 ]

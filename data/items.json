@@ -8,12 +8,44 @@
     "stats": { "AttackDamage": 10, "AttackSpeed": 0.05 }
   },
   {
+    "id": "dusk_dagger",
+    "name": "Dusk Dagger",
+    "slot": "Weapon",
+    "rarity": "Uncommon",
+    "description": "Blackened blade dipped in nightshade. Strikes with blinding quickness.",
+    "stats": { "AttackDamage": 14, "AttackSpeed": 0.35, "DodgeChance": 0.08 }
+  },
+  {
     "id": "executioner_axe",
     "name": "Headsman's Crescent",
     "slot": "Weapon",
     "rarity": "Rare",
     "description": "Heavy dark-steel blade that yearns for vertebrae.",
-    "stats": { "AttackDamage": 24, "CritChance": 0.12, "CritMultiplier": 0.4 }
+    "stats": { "AttackDamage": 26, "CritChance": 0.14, "CritMultiplier": 0.45 }
+  },
+  {
+    "id": "flanged_mace",
+    "name": "Bone-Crusher Flanged Mace",
+    "slot": "Weapon",
+    "rarity": "Rare",
+    "description": "Dense spiked bludgeon designed to splinter knightly gothic plate.",
+    "stats": { "AttackDamage": 30, "Armor": 6 }
+  },
+  {
+    "id": "runic_greatsword",
+    "name": "Runic Bastard Greatsword",
+    "slot": "Weapon",
+    "rarity": "Epic",
+    "description": "Ancient broadsword etched with glowing glyphs of the fallen paladins.",
+    "stats": { "AttackDamage": 38, "MaxHealth": 45, "Armor": 8 }
+  },
+  {
+    "id": "void_katana",
+    "name": "Shadow Piercer Nodachi",
+    "slot": "Weapon",
+    "rarity": "Epic",
+    "description": "Folded obsidian blade that cuts through reality itself.",
+    "stats": { "AttackDamage": 34, "AttackSpeed": 0.28, "CritChance": 0.18 }
   },
   {
     "id": "blood_scythe",
@@ -21,7 +53,23 @@
     "slot": "Weapon",
     "rarity": "Legendary",
     "description": "Pulses with the stolen heartbeats of fallen climbers.",
-    "stats": { "AttackDamage": 45, "AttackSpeed": 0.25, "Lifesteal": 0.18, "CritChance": 0.15 }
+    "stats": { "AttackDamage": 48, "AttackSpeed": 0.25, "Lifesteal": 0.20, "CritChance": 0.15 }
+  },
+  {
+    "id": "cursed_soul_eater",
+    "name": "Soul Devourer Blade",
+    "slot": "Weapon",
+    "rarity": "Cursed",
+    "description": "Whispers madness into the wielder. Enormous lethality at the price of flesh.",
+    "stats": { "AttackDamage": 60, "CritChance": 0.25, "MaxHealth": -30, "Lifesteal": 0.12 }
+  },
+  {
+    "id": "tattered_brigandine",
+    "name": "Wanderer's Padded Brigandine",
+    "slot": "Armor",
+    "rarity": "Common",
+    "description": "Stiff leather vest layered with iron rings, smelling of peat smoke.",
+    "stats": { "MaxHealth": 35, "Armor": 6 }
   },
   {
     "id": "bone_carapace",
@@ -29,7 +77,15 @@
     "slot": "Armor",
     "rarity": "Uncommon",
     "description": "Ribcages of ancient foes stitched with rusted wire.",
-    "stats": { "MaxHealth": 50, "Armor": 12 }
+    "stats": { "MaxHealth": 60, "Armor": 14 }
+  },
+  {
+    "id": "knight_cuirass",
+    "name": "Black Guard Cuirass",
+    "slot": "Armor",
+    "rarity": "Rare",
+    "description": "Fluted dark-steel armor forged to withstand siege trebuchets.",
+    "stats": { "MaxHealth": 90, "Armor": 22 }
   },
   {
     "id": "abyssal_shroud",
@@ -37,7 +93,23 @@
     "slot": "Armor",
     "rarity": "Epic",
     "description": "Dark cloth woven from shadows that swallows incoming strikes.",
-    "stats": { "MaxHealth": 110, "Armor": 22, "DodgeChance": 0.10 }
+    "stats": { "MaxHealth": 120, "Armor": 24, "DodgeChance": 0.12 }
+  },
+  {
+    "id": "demon_plate",
+    "name": "Abyssal Juggernaut Plate",
+    "slot": "Armor",
+    "rarity": "Legendary",
+    "description": "Forged in the underworld bowels beneath the Spire. Unbreakable.",
+    "stats": { "MaxHealth": 180, "Armor": 35, "AttackDamage": 10 }
+  },
+  {
+    "id": "blood_soaked_shroud",
+    "name": "Garb of the Crimson Martyr",
+    "slot": "Armor",
+    "rarity": "Cursed",
+    "description": "Constantly weeps fresh blood. Grants terrifying regenerative hunger.",
+    "stats": { "MaxHealth": 140, "Lifesteal": 0.22, "Armor": -10 }
   },
   {
     "id": "iron_sallet",
@@ -48,12 +120,60 @@
     "stats": { "MaxHealth": 25, "Armor": 6 }
   },
   {
+    "id": "leather_hood",
+    "name": "Crypt Stalker Hood",
+    "slot": "Helmet",
+    "rarity": "Uncommon",
+    "description": "Supple shadow-leather cowl that muffles footsteps.",
+    "stats": { "DodgeChance": 0.08, "AttackSpeed": 0.08 }
+  },
+  {
+    "id": "winged_bascinet",
+    "name": "Valkyrie Winged Bascinet",
+    "slot": "Helmet",
+    "rarity": "Rare",
+    "description": "Adorned with tarnished silver wings that channel celestial fury.",
+    "stats": { "MaxHealth": 45, "Armor": 12, "CritChance": 0.06 }
+  },
+  {
+    "id": "shadow_cowl",
+    "name": "Cowl of the Faceless",
+    "slot": "Helmet",
+    "rarity": "Epic",
+    "description": "Obscures the wearer's face in eternal twilight.",
+    "stats": { "MaxHealth": 70, "CritChance": 0.12, "DodgeChance": 0.10 }
+  },
+  {
     "id": "crown_of_thorns",
     "name": "Martyr's Jagged Crown",
     "slot": "Helmet",
     "rarity": "Cursed",
     "description": "Pierces the wearer's skull, granting terrifying lethality at great agony.",
-    "stats": { "AttackDamage": 30, "CritChance": 0.20, "Armor": -5 }
+    "stats": { "AttackDamage": 32, "CritChance": 0.22, "Armor": -6 }
+  },
+  {
+    "id": "crown_of_the_spire_king",
+    "name": "Crown of the Ascended Monarch",
+    "slot": "Helmet",
+    "rarity": "Legendary",
+    "description": "Radiates sovereign dominion over the damned citadel.",
+    "stats": { "MaxHealth": 100, "AttackDamage": 20, "Armor": 16, "CritChance": 0.10 }
+  },
+  {
+    "id": "wooden_buckler",
+    "name": "Reinforced Oak Buckler",
+    "slot": "OffHand",
+    "rarity": "Common",
+    "description": "Oak planks bound with iron rivets to parry incoming blades.",
+    "stats": { "Armor": 8, "MaxHealth": 20 }
+  },
+  {
+    "id": "spiked_targe",
+    "name": "Spiked Iron Targe",
+    "slot": "OffHand",
+    "rarity": "Uncommon",
+    "description": "Fitted with a vicious 8-inch central spike to counter-strike foes.",
+    "stats": { "Armor": 14, "AttackDamage": 8 }
   },
   {
     "id": "weeping_shield",
@@ -61,7 +181,55 @@
     "slot": "OffHand",
     "rarity": "Rare",
     "description": "Embossed with a sorrowful face that deflects heavy impacts.",
-    "stats": { "Armor": 18, "DodgeChance": 0.08, "MaxHealth": 40 }
+    "stats": { "Armor": 20, "DodgeChance": 0.08, "MaxHealth": 50 }
+  },
+  {
+    "id": "grimoire_of_shadows",
+    "name": "Grimoire of the Blood Moon",
+    "slot": "OffHand",
+    "rarity": "Epic",
+    "description": "Bound in ghoul skin, chanting incantations that leach enemy vitality.",
+    "stats": { "Lifesteal": 0.15, "CritChance": 0.12, "AttackDamage": 15 }
+  },
+  {
+    "id": "aegis_of_the_immortal",
+    "name": "Aegis of the Sunken Fortress",
+    "slot": "OffHand",
+    "rarity": "Legendary",
+    "description": "Tower shield blessed by titans, capable of repelling falling meteors.",
+    "stats": { "Armor": 36, "MaxHealth": 120, "DodgeChance": 0.06 }
+  },
+  {
+    "id": "cursed_skull_totem",
+    "name": "Totem of the Flayed Prophet",
+    "slot": "OffHand",
+    "rarity": "Cursed",
+    "description": "Cackling shrunken skull that hungers for mortal combat.",
+    "stats": { "AttackDamage": 28, "Lifesteal": 0.16, "MaxHealth": -25 }
+  },
+  {
+    "id": "copper_ring",
+    "name": "Climber's Copper Band",
+    "slot": "Accessory",
+    "rarity": "Common",
+    "description": "Simple etched ring worn by ancient wanderers for good fortune.",
+    "stats": { "MaxHealth": 20, "GoldMultiplier": 0.12 }
+  },
+  {
+    "id": "rogue_signet",
+    "name": "Signet of the Shadow Guild",
+    "slot": "Accessory",
+    "rarity": "Uncommon",
+    "description": "Engraved with raven feathers, hastening reflexes.",
+    "stats": { "AttackSpeed": 0.15, "DodgeChance": 0.07 }
+  },
+  {
+    "id": "vampire_fang_pendant",
+    "name": "Nocturnal Fang Amulet",
+    "slot": "Accessory",
+    "rarity": "Rare",
+    "description": "Preserved canine of an elder bat vampire, thirsty for gore.",
+    "stats": { "Lifesteal": 0.10, "AttackSpeed": 0.12, "AttackDamage": 10 }
   },
   {
     "id": "bloodstone_amulet",
@@ -69,6 +237,22 @@
     "slot": "Accessory",
     "rarity": "Epic",
     "description": "Carved from the ocular stone of the Floor 10 sentinel.",
-    "stats": { "Lifesteal": 0.12, "CritChance": 0.10, "AttackDamage": 14 }
+    "stats": { "Lifesteal": 0.14, "CritChance": 0.12, "AttackDamage": 16 }
+  },
+  {
+    "id": "heart_of_the_spire",
+    "name": "Heart of the Nether Citadels",
+    "slot": "Accessory",
+    "rarity": "Legendary",
+    "description": "Pulsing core of solidified dark ether, empowering all attributes.",
+    "stats": { "MaxHealth": 80, "GoldMultiplier": 0.35, "Lifesteal": 0.12, "CritChance": 0.10 }
+  },
+  {
+    "id": "ring_of_the_doomed",
+    "name": "Band of the Cursed Execution",
+    "slot": "Accessory",
+    "rarity": "Cursed",
+    "description": "Gives fatal precision on critical strikes, sacrificing mortal endurance.",
+    "stats": { "CritMultiplier": 0.85, "CritChance": 0.20, "MaxHealth": -35 }
   }
 ]

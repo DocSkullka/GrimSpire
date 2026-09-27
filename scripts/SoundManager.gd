@@ -15,13 +15,17 @@ var sfx_coin: AudioStreamWAV
 var sfx_equip: AudioStreamWAV
 var sfx_death: AudioStreamWAV
 var sfx_click: AudioStreamWAV
+var sfx_step: AudioStreamWAV
+var sfx_block: AudioStreamWAV
+var sfx_soul: AudioStreamWAV
+var sfx_room_clear: AudioStreamWAV
 var bgm_ambient: AudioStreamWAV
 
 func _init():
 	_create_sfx()
 
 func _ready():
-	for i in range(12):
+	for i in range(16):
 		var p = AudioStreamPlayer.new()
 		add_child(p)
 		audio_players.append(p)
@@ -77,6 +81,18 @@ func play_death():
 func play_click():
 	_play(sfx_click)
 
+func play_step():
+	_play(sfx_step)
+
+func play_block():
+	_play(sfx_block)
+
+func play_soul():
+	_play(sfx_soul)
+
+func play_room_clear():
+	_play(sfx_room_clear)
+
 func play_test_sound():
 	_play(sfx_coin)
 
@@ -97,6 +113,10 @@ func _create_sfx():
 	sfx_equip = _generate_tone_decay(0.15, 260.0, 130.0, 0.5)
 	sfx_death = _generate_descending_drone(0.8, 180.0, 40.0, 0.6)
 	sfx_click = _generate_tone_decay(0.04, 800.0, 400.0, 0.35)
+	sfx_step = _generate_noise_sweep(0.06, 250.0, 80.0, 0.25)
+	sfx_block = _generate_two_tone(0.16, 920.0, 1400.0, 0.55)
+	sfx_soul = _generate_descending_drone(0.45, 340.0, 90.0, 0.75)
+	sfx_room_clear = _generate_two_tone(0.35, 440.0, 880.0, 0.5)
 	bgm_ambient = _generate_dark_ambient_loop(4.0)
 
 func _generate_dark_ambient_loop(duration: float) -> AudioStreamWAV:
@@ -108,8 +128,6 @@ func _generate_dark_ambient_loop(duration: float) -> AudioStreamWAV:
 	var bytes = PackedByteArray()
 	for i in range(samples):
 		var t = float(i) / 22050.0
-		# Integer cycle harmonics for seamless loop:
-		# 55Hz (220 cycles), 110Hz (440 cycles), 165Hz (660 cycles)
 		var slow_pulse = 0.75 + 0.25 * sin(t * 0.25 * TAU)
 		var slow_pulse2 = 0.8 + 0.2 * cos(t * 0.5 * TAU)
 		var val1 = sin(t * 55.0 * TAU) * 0.45 * slow_pulse

@@ -31,12 +31,37 @@ func _load_json(path: String) -> Array:
 func get_random_items(count: int, floor_num: int) -> Array:
 	if items.is_empty():
 		return []
+	
+	# Weighted rarity selection based on floor progression
 	var pool = items.duplicate()
 	pool.shuffle()
-	var result = []
-	for i in range(min(count, pool.size())):
-		result.append(pool[i].duplicate(true))
-	return result
+	
+	var chosen: Array = []
+	var chosen_slots = {}
+	
+	# First try picking items with distinct slots for maximum diversity
+	for item in pool:
+		var slot = item.get("slot", "")
+		if not chosen_slots.has(slot):
+			chosen.append(item.duplicate(true))
+			chosen_slots[slot] = true
+			if chosen.size() >= count:
+				break
+	
+	# If not enough distinct slots, fill with remaining items
+	if chosen.size() < count:
+		for item in pool:
+			var found = false
+			for c in chosen:
+				if c.get("id") == item.get("id"):
+					found = true
+					break
+			if not found:
+				chosen.append(item.duplicate(true))
+				if chosen.size() >= count:
+					break
+	
+	return chosen
 
 func get_enemy_for_floor(floor_num: int) -> Dictionary:
 	var template: Dictionary = {}
@@ -47,22 +72,54 @@ func get_enemy_for_floor(floor_num: int) -> Dictionary:
 			template = _find_enemy("boss_gargoyle")
 		elif floor_num == 20:
 			template = _find_enemy("boss_flesh_amalgam")
+		elif floor_num == 30:
+			template = _find_enemy("boss_valthor")
 		else:
-			template = _find_enemy("boss_gargoyle")
-			template["name"] = "Ancient Spire Titan [Floor %d]" % floor_num
+			var boss_pool = ["boss_gargoyle", "boss_flesh_amalgam", "boss_valthor"]
+			var b_id = boss_pool[(floor_num / 10) % boss_pool.size()]
+			template = _find_enemy(b_id)
+			template["name"] = "%s [Tier %d]" % [template.get("name", "Spire Lord"), floor_num / 10]
 	elif floor_num == 1:
 		template = _find_enemy("feeble_skeleton")
-	elif floor_num <= 4:
+	elif floor_num == 2:
 		template = _find_enemy("spire_imp")
-	else:
+	elif floor_num == 3:
+		template = _find_enemy("crypt_ghoul")
+	elif floor_num == 4:
+		template = _find_enemy("tormented_shade")
+	elif floor_num == 5:
 		template = _find_enemy("hollow_knight")
+	elif floor_num == 6:
+		template = _find_enemy("blood_cultist")
+	elif floor_num == 7:
+		template = _find_enemy("hollow_knight")
+	elif floor_num == 8:
+		template = _find_enemy("obsidian_gargoyle")
+	elif floor_num == 9:
+		template = _find_enemy("plague_abomination")
+	elif floor_num in [11, 12, 13]:
+		template = _find_enemy("cursed_inquisitor")
+	elif floor_num in [14, 15, 16]:
+		template = _find_enemy("spire_executioner")
+	elif floor_num in [17, 18, 19]:
+		template = _find_enemy("crypt_lich")
+	elif floor_num >= 21 and floor_num <= 25:
+		template = _find_enemy("void_stalker")
+	elif floor_num >= 26 and floor_num <= 29:
+		template = _find_enemy("infernal_colossus")
+	else:
+		var non_boss_pool = [
+			"hollow_knight", "blood_cultist", "spire_executioner",
+			"crypt_lich", "void_stalker", "infernal_colossus"
+		]
+		var idx = (floor_num % non_boss_pool.size())
+		template = _find_enemy(non_boss_pool[idx])
 	
 	# Clone template and scale by floor
 	var enemy = template.duplicate(true)
 	var stats = enemy["stats"]
 	
-	# Scaling formula matching GrimSpire GDD: +10% per floor after floor 1
-	var scale_factor = 1.0 + (floor_num - 1) * 0.10
+	var scale_factor = 1.0 + (floor_num - 1) * 0.09
 	if is_boss:
 		scale_factor = 1.0 + (floor_num - 10) * 0.12
 	
@@ -70,11 +127,12 @@ func get_enemy_for_floor(floor_num: int) -> Dictionary:
 	var dmg = int(stats.get("AttackDamage", 10) * scale_factor)
 	var armor = int(stats.get("Armor", 0) * (1.0 + (floor_num - 1) * 0.05))
 	var spd = float(stats.get("AttackSpeed", 1.0))
-	var gold = int(enemy.get("goldReward", 15) * (1.0 + (floor_num - 1) * 0.15))
+	var gold = int(enemy.get("goldReward", 15) * (1.0 + (floor_num - 1) * 0.12))
 	
 	return {
 		"id": enemy.get("id", "enemy"),
 		"name": enemy.get("name", "Spire Horror"),
+		"description": enemy.get("description", ""),
 		"isBoss": is_boss,
 		"max_health": max_hp,
 		"current_health": max_hp,
@@ -82,6 +140,7 @@ func get_enemy_for_floor(floor_num: int) -> Dictionary:
 		"armor": armor,
 		"attack_speed": spd,
 		"crit_chance": stats.get("CritChance", 0.05),
+		"crit_multiplier": stats.get("CritMultiplier", 1.5),
 		"lifesteal": stats.get("Lifesteal", 0.0),
 		"dodge_chance": stats.get("DodgeChance", 0.0),
 		"gold_reward": gold
@@ -108,6 +167,7 @@ func calculate_damage(attacker: Dictionary, defender: Dictionary) -> Dictionary:
 		return {
 			"dodged": true,
 			"is_crit": false,
+			"is_blocked": false,
 			"damage": 0,
 			"lifesteal": 0
 		}
@@ -124,6 +184,11 @@ func calculate_damage(attacker: Dictionary, defender: Dictionary) -> Dictionary:
 	var reduction = 100.0 / (100.0 + def_armor)
 	var final_dmg = max(1, int(round(raw_dmg * reduction)))
 	
+	# Block check (if defender has high armor and reduced damage substantially)
+	var is_blocked = (def_armor >= 12 and reduction < 0.60 and randf() < 0.35)
+	if is_blocked:
+		final_dmg = max(1, int(final_dmg * 0.5))
+	
 	# Lifesteal
 	var ls_rate = float(attacker.get("lifesteal", 0.0))
 	var healed = int(round(final_dmg * ls_rate)) if ls_rate > 0.0 else 0
@@ -131,6 +196,7 @@ func calculate_damage(attacker: Dictionary, defender: Dictionary) -> Dictionary:
 	return {
 		"dodged": false,
 		"is_crit": is_crit,
+		"is_blocked": is_blocked,
 		"damage": final_dmg,
 		"lifesteal": healed
 	}

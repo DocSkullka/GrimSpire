@@ -1,6 +1,6 @@
 extends Node2D
 
-enum GameState { CAMP, BATTLE, DRAFT, DEFEAT }
+enum GameState { CAMP, BATTLE, DRAFT, DEFEAT, MENU, COMPENDIUM }
 
 var state: GameState = GameState.CAMP
 
@@ -119,6 +119,9 @@ var run_gold_earned: int = 0
 
 var player_attack_cooldown: float = 0.0
 var enemy_attack_cooldown: float = 0.0
+var combat_speed: float = 1.0 # 1.0, 1.5, 2.0
+var player_soul: float = 0.0 # 0.0 to 100.0 (Soul Cleave ability)
+var is_traversing: bool = false
 
 var player_base_pos: Vector2
 var enemy_base_pos: Vector2
@@ -132,12 +135,49 @@ var tex_enemy_imp: Texture2D
 var tex_enemy_knight: Texture2D
 var tex_enemy_ghoul: Texture2D
 var tex_enemy_cultist: Texture2D
+var tex_enemy_shade: Texture2D
+var tex_enemy_executioner: Texture2D
 var tex_boss_malgorath: Texture2D
 var tex_boss_amalgam: Texture2D
+var tex_boss_valthor: Texture2D
 var tex_slash: Texture2D
 var tex_blood: Texture2D
+var tex_archway: Texture2D
+var tex_chest: Texture2D
+
+var tex_gear_weapons: Dictionary = {}
+var tex_gear_helms: Dictionary = {}
+var tex_gear_armors: Dictionary = {}
+var tex_gear_offhands: Dictionary = {}
 
 var item_icons: Dictionary = {}
+
+# Dynamic Modular Rig Nodes
+var player_shadow: Polygon2D
+var armor_overlay: Sprite2D
+var helm_overlay: Sprite2D
+var offhand_anchor: Marker2D
+var offhand_sprite: Sprite2D
+var weapon_anchor: Marker2D
+var weapon_sprite: Sprite2D
+var accessory_aura: Node2D
+var walk_dust: CPUParticles2D
+
+var enemy_shadow: Polygon2D
+var telegraph_glow: Polygon2D
+var enemy_walk_dust: CPUParticles2D
+var archway_sprite: Sprite2D
+var chest_sprite: Sprite2D
+
+# Dynamic UI Additions
+var soul_bar: ProgressBar
+var soul_label: Label
+var speed_btn: Button
+var room_clear_banner: PanelContainer
+var room_clear_label: Label
+var btn_skip_draft: Button
+var main_menu_modal: Control
+var compendium_modal: Control
 
 func _safe_load_tex(path: String) -> Texture2D:
 	if ResourceLoader.exists(path):
@@ -156,6 +196,8 @@ func _ready():
 	player_base_pos = player_anchor.position
 	enemy_base_pos = enemy_anchor.position
 	
+	_build_modular_rigs()
+	_build_enhanced_ui()
 	_apply_ui_theming()
 	_init_localization_and_settings()
 	
@@ -181,7 +223,12 @@ func _ready():
 func _unhandled_input(event: InputEvent):
 	if event is InputEventKey and event.pressed and not event.echo:
 		if event.keycode == KEY_ESCAPE:
-			_toggle_settings_modal()
+			if compendium_modal != null and compendium_modal.visible:
+				compendium_modal.visible = false
+			elif main_menu_modal != null and main_menu_modal.visible:
+				main_menu_modal.visible = false
+			else:
+				_toggle_settings_modal()
 
 func _load_textures():
 	tex_spire_interior = _safe_load_tex("res://assets/textures/spire_interior.png")
@@ -191,16 +238,35 @@ func _load_textures():
 	tex_enemy_imp = _safe_load_tex("res://assets/textures/enemy_imp.png")
 	tex_enemy_knight = _safe_load_tex("res://assets/textures/enemy_knight.png")
 	tex_enemy_ghoul = _safe_load_tex("res://assets/textures/enemy_ghoul.png")
-	if tex_enemy_ghoul == null:
-		tex_enemy_ghoul = _safe_load_tex("res://assets/textures/enemy_skeleton.png")
 	tex_enemy_cultist = _safe_load_tex("res://assets/textures/enemy_cultist.png")
-	if tex_enemy_cultist == null:
-		tex_enemy_cultist = _safe_load_tex("res://assets/textures/enemy_knight.png")
+	tex_enemy_shade = _safe_load_tex("res://assets/textures/enemy_shade.png")
+	tex_enemy_executioner = _safe_load_tex("res://assets/textures/enemy_executioner.png")
 	tex_boss_malgorath = _safe_load_tex("res://assets/textures/boss_malgorath.png")
 	tex_boss_amalgam = _safe_load_tex("res://assets/textures/boss_amalgam.png")
+	tex_boss_valthor = _safe_load_tex("res://assets/textures/boss_valthor.png")
 	tex_slash = _safe_load_tex("res://assets/ui/slash_effect.png")
 	tex_blood = _safe_load_tex("res://assets/ui/blood_splatter.png")
+	tex_archway = _safe_load_tex("res://assets/ui/dungeon_archway.png")
+	tex_chest = _safe_load_tex("res://assets/ui/treasure_chest.png")
 	
+	# Modular Gear Textures
+	tex_gear_weapons["cleaver"] = _safe_load_tex("res://assets/gear/weapon_cleaver.png")
+	tex_gear_weapons["axe"] = _safe_load_tex("res://assets/gear/weapon_axe.png")
+	tex_gear_weapons["scythe"] = _safe_load_tex("res://assets/gear/weapon_scythe.png")
+	tex_gear_weapons["greatsword"] = _safe_load_tex("res://assets/gear/weapon_greatsword.png")
+	tex_gear_weapons["dagger"] = _safe_load_tex("res://assets/gear/weapon_dagger.png")
+	
+	tex_gear_helms["sallet"] = _safe_load_tex("res://assets/gear/helm_sallet.png")
+	tex_gear_helms["crown_thorns"] = _safe_load_tex("res://assets/gear/helm_crown_thorns.png")
+	tex_gear_helms["hood"] = _safe_load_tex("res://assets/gear/helm_hood.png")
+	
+	tex_gear_armors["carapace"] = _safe_load_tex("res://assets/gear/armor_carapace.png")
+	tex_gear_armors["cuirass"] = _safe_load_tex("res://assets/gear/armor_cuirass.png")
+	
+	tex_gear_offhands["weeping"] = _safe_load_tex("res://assets/gear/offhand_weeping.png")
+	tex_gear_offhands["grimoire"] = _safe_load_tex("res://assets/gear/offhand_grimoire.png")
+	
+	# Slot Icons
 	item_icons["Weapon"] = _safe_load_tex("res://assets/icons/icon_weapon.png")
 	item_icons["Armor"] = _safe_load_tex("res://assets/icons/icon_armor.png")
 	item_icons["Helmet"] = _safe_load_tex("res://assets/icons/icon_helm.png")
@@ -211,8 +277,589 @@ func _load_textures():
 	gold_icon.texture = _safe_load_tex("res://assets/ui/gold_coin.png")
 	bg_texture.texture = tex_camp_altar
 
+func _build_modular_rigs():
+	# 1. Dungeon Props in Arena
+	var arena = $Arena
+	archway_sprite = Sprite2D.new()
+	archway_sprite.texture = tex_archway
+	archway_sprite.position = Vector2(1180, 390)
+	archway_sprite.scale = Vector2(0.85, 0.85)
+	archway_sprite.z_index = -1
+	arena.add_child(archway_sprite)
+	
+	chest_sprite = Sprite2D.new()
+	chest_sprite.texture = tex_chest
+	chest_sprite.position = Vector2(640, 480)
+	chest_sprite.scale = Vector2(0.85, 0.85)
+	chest_sprite.visible = false
+	arena.add_child(chest_sprite)
+	
+	# 2. Player Rig Additions
+	player_shadow = Polygon2D.new()
+	var s_pts = PackedVector2Array()
+	for i in range(16):
+		var ang = float(i) / 16.0 * TAU
+		s_pts.append(Vector2(cos(ang) * 55.0, sin(ang) * 14.0))
+	player_shadow.polygon = s_pts
+	player_shadow.color = Color(0.02, 0.01, 0.03, 0.55)
+	player_shadow.position = Vector2(0, 5)
+	player_anchor.add_child(player_shadow)
+	player_anchor.move_child(player_shadow, 0)
+	
+	accessory_aura = Node2D.new()
+	accessory_aura.position = Vector2(0, -170)
+	accessory_aura.visible = false
+	player_anchor.add_child(accessory_aura)
+	for i in range(3):
+		var mote = Polygon2D.new()
+		var m_pts = PackedVector2Array([Vector2(-4, -4), Vector2(4, -4), Vector2(4, 4), Vector2(-4, 4)])
+		mote.polygon = m_pts
+		mote.color = Color(1.0, 0.4, 0.5, 0.9)
+		var rad = float(i) / 3.0 * TAU
+		mote.position = Vector2(cos(rad) * 45.0, sin(rad) * 45.0)
+		accessory_aura.add_child(mote)
+	
+	armor_overlay = Sprite2D.new()
+	armor_overlay.position = Vector2(0, -165)
+	armor_overlay.scale = Vector2(0.50, 0.50)
+	armor_overlay.visible = false
+	player_anchor.add_child(armor_overlay)
+	
+	helm_overlay = Sprite2D.new()
+	helm_overlay.position = Vector2(0, -265)
+	helm_overlay.scale = Vector2(0.48, 0.48)
+	helm_overlay.visible = false
+	player_anchor.add_child(helm_overlay)
+	
+	offhand_anchor = Marker2D.new()
+	offhand_anchor.position = Vector2(-35, -160)
+	player_anchor.add_child(offhand_anchor)
+	
+	offhand_sprite = Sprite2D.new()
+	offhand_sprite.scale = Vector2(0.45, 0.45)
+	offhand_sprite.visible = false
+	offhand_anchor.add_child(offhand_sprite)
+	
+	weapon_anchor = Marker2D.new()
+	weapon_anchor.position = Vector2(30, -155)
+	player_anchor.add_child(weapon_anchor)
+	
+	weapon_sprite = Sprite2D.new()
+	weapon_sprite.position = Vector2(10, -45)
+	weapon_sprite.scale = Vector2(0.55, 0.55)
+	weapon_sprite.visible = false
+	weapon_anchor.add_child(weapon_sprite)
+	
+	walk_dust = CPUParticles2D.new()
+	walk_dust.position = Vector2(0, 5)
+	walk_dust.emitting = false
+	walk_dust.amount = 12
+	walk_dust.lifetime = 0.45
+	walk_dust.direction = Vector2(-1, -0.3)
+	walk_dust.spread = 35.0
+	walk_dust.initial_velocity_min = 20.0
+	walk_dust.initial_velocity_max = 50.0
+	walk_dust.gravity = Vector2(0, 15)
+	walk_dust.scale_amount_min = 2.5
+	walk_dust.scale_amount_max = 5.0
+	walk_dust.color = Color(0.4, 0.35, 0.3, 0.4)
+	player_anchor.add_child(walk_dust)
+	
+	# 3. Enemy Rig Additions
+	enemy_shadow = Polygon2D.new()
+	var e_pts = PackedVector2Array()
+	for i in range(16):
+		var ang = float(i) / 16.0 * TAU
+		e_pts.append(Vector2(cos(ang) * 55.0, sin(ang) * 14.0))
+	enemy_shadow.polygon = e_pts
+	enemy_shadow.color = Color(0.02, 0.01, 0.03, 0.55)
+	enemy_shadow.position = Vector2(0, 5)
+	enemy_anchor.add_child(enemy_shadow)
+	enemy_anchor.move_child(enemy_shadow, 0)
+	
+	telegraph_glow = Polygon2D.new()
+	var t_pts = PackedVector2Array([Vector2(-15, -4), Vector2(15, -4), Vector2(0, 12)])
+	telegraph_glow.polygon = t_pts
+	telegraph_glow.color = Color(1.0, 0.2, 0.2, 0.9)
+	telegraph_glow.position = Vector2(0, -260)
+	telegraph_glow.visible = false
+	enemy_anchor.add_child(telegraph_glow)
+	
+	enemy_walk_dust = CPUParticles2D.new()
+	enemy_walk_dust.position = Vector2(0, 5)
+	enemy_walk_dust.emitting = false
+	enemy_walk_dust.amount = 10
+	enemy_walk_dust.lifetime = 0.4
+	enemy_walk_dust.direction = Vector2(1, -0.3)
+	enemy_walk_dust.spread = 35.0
+	enemy_walk_dust.initial_velocity_min = 20.0
+	enemy_walk_dust.initial_velocity_max = 45.0
+	enemy_walk_dust.gravity = Vector2(0, 15)
+	enemy_walk_dust.scale_amount_min = 2.0
+	enemy_walk_dust.scale_amount_max = 4.5
+	enemy_walk_dust.color = Color(0.4, 0.35, 0.3, 0.4)
+	enemy_anchor.add_child(enemy_walk_dust)
+
+func _build_enhanced_ui():
+	# 1. Soul Cleave Bar in BattleHUD
+	soul_bar = ProgressBar.new()
+	soul_bar.custom_minimum_size = Vector2(320, 14)
+	soul_bar.position = Vector2(40, 518)
+	soul_bar.max_value = 100.0
+	soul_bar.value = 0.0
+	soul_bar.show_percentage = false
+	
+	var sb_bg = StyleBoxFlat.new()
+	sb_bg.bg_color = Color(0.04, 0.03, 0.06, 0.9)
+	sb_bg.border_color = Color(0.3, 0.15, 0.4, 0.8)
+	sb_bg.border_width_left = 1
+	sb_bg.border_width_top = 1
+	sb_bg.border_width_right = 1
+	sb_bg.border_width_bottom = 1
+	sb_bg.corner_radius_top_left = 3
+	sb_bg.corner_radius_top_right = 3
+	sb_bg.corner_radius_bottom_left = 3
+	sb_bg.corner_radius_bottom_right = 3
+	
+	var sb_fill = StyleBoxFlat.new()
+	sb_fill.bg_color = Color(0.75, 0.25, 0.95, 1.0)
+	sb_fill.corner_radius_top_left = 3
+	sb_fill.corner_radius_top_right = 3
+	sb_fill.corner_radius_bottom_left = 3
+	sb_fill.corner_radius_bottom_right = 3
+	
+	soul_bar.add_theme_stylebox_override("background", sb_bg)
+	soul_bar.add_theme_stylebox_override("fill", sb_fill)
+	battle_hud.add_child(soul_bar)
+	
+	soul_label = Label.new()
+	soul_label.position = Vector2(40, 517)
+	soul_label.custom_minimum_size = Vector2(320, 14)
+	soul_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	soul_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	soul_label.add_theme_font_size_override("font_size", 10)
+	soul_label.add_theme_color_override("font_color", Color(1.0, 0.9, 1.0))
+	soul_label.text = "⚡ ДУША: 0%"
+	battle_hud.add_child(soul_label)
+	
+	# 2. Combat Speed Toggle Button & Pause Menu Button in BattleHUD
+	speed_btn = Button.new()
+	speed_btn.custom_minimum_size = Vector2(100, 34)
+	speed_btn.position = Vector2(1140, 68)
+	speed_btn.text = "⏩ 1.0x"
+	speed_btn.add_theme_font_size_override("font_size", 12)
+	speed_btn.pressed.connect(_on_toggle_speed_pressed)
+	battle_hud.add_child(speed_btn)
+	
+	var btn_battle_menu = Button.new()
+	btn_battle_menu.custom_minimum_size = Vector2(100, 34)
+	btn_battle_menu.position = Vector2(1030, 68)
+	btn_battle_menu.text = "⏸ МЕНЮ"
+	btn_battle_menu.add_theme_font_size_override("font_size", 12)
+	btn_battle_menu.pressed.connect(_toggle_settings_modal)
+	battle_hud.add_child(btn_battle_menu)
+	
+	# 3. Room Clear Banner
+	room_clear_banner = PanelContainer.new()
+	room_clear_banner.custom_minimum_size = Vector2(420, 54)
+	room_clear_banner.position = Vector2(430, 160)
+	room_clear_banner.visible = false
+	var r_style = StyleBoxFlat.new()
+	r_style.bg_color = Color(0.08, 0.06, 0.12, 0.95)
+	r_style.border_color = Color(1.0, 0.8, 0.25, 0.9)
+	r_style.border_width_left = 2
+	r_style.border_width_top = 2
+	r_style.border_width_right = 2
+	r_style.border_width_bottom = 2
+	r_style.corner_radius_top_left = 8
+	r_style.corner_radius_top_right = 8
+	r_style.corner_radius_bottom_left = 8
+	r_style.corner_radius_bottom_right = 8
+	room_clear_banner.add_theme_stylebox_override("panel", r_style)
+	
+	room_clear_label = Label.new()
+	room_clear_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	room_clear_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	room_clear_label.add_theme_font_size_override("font_size", 20)
+	room_clear_label.add_theme_color_override("font_color", Color(1.0, 0.85, 0.25))
+	room_clear_label.text = "⚔ КОМНАТА ОЧИЩЕНА! ⚔"
+	room_clear_banner.add_child(room_clear_label)
+	battle_hud.add_child(room_clear_banner)
+	
+	# 4. Skip & Salvage Button in DraftModal (below cards container)
+	var draft_vbox = $UI/DraftModal/VBox
+	var skip_center = CenterContainer.new()
+	draft_vbox.add_child(skip_center)
+	
+	var skip_vbox = VBoxContainer.new()
+	skip_vbox.add_theme_constant_override("separation", 4)
+	skip_center.add_child(skip_vbox)
+	
+	btn_skip_draft = Button.new()
+	btn_skip_draft.custom_minimum_size = Vector2(420, 46)
+	btn_skip_draft.text = "💰 ПРОПУСТИТЬ И ПЕРЕПЛАВИТЬ (+30 ЗОЛ.)"
+	btn_skip_draft.add_theme_font_size_override("font_size", 14)
+	btn_skip_draft.add_theme_color_override("font_color", Color(1.0, 0.9, 0.4))
+	btn_skip_draft.pressed.connect(_on_skip_draft_pressed)
+	skip_vbox.add_child(btn_skip_draft)
+	
+	var lbl_skip_hint = Label.new()
+	lbl_skip_hint.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	lbl_skip_hint.add_theme_font_size_override("font_size", 11)
+	lbl_skip_hint.add_theme_color_override("font_color", Color(0.7, 0.7, 0.75))
+	lbl_skip_hint.text = "Оставить текущее снаряжение без изменений и забрать чистое золото."
+	skip_vbox.add_child(lbl_skip_hint)
+	
+	# 5. Camp Navigation & Buttons
+	var camp_vbox = $UI/CampPanel/VBox
+	var camp_nav_hbox = HBoxContainer.new()
+	camp_nav_hbox.alignment = BoxContainer.ALIGNMENT_CENTER
+	camp_nav_hbox.add_theme_constant_override("separation", 16)
+	camp_vbox.add_child(camp_nav_hbox)
+	
+	var btn_camp_compendium = Button.new()
+	btn_camp_compendium.custom_minimum_size = Vector2(240, 42)
+	btn_camp_compendium.text = "📖 БЕСТИАРИЙ И АРСЕНАЛ"
+	btn_camp_compendium.add_theme_font_size_override("font_size", 13)
+	btn_camp_compendium.pressed.connect(_open_compendium)
+	camp_nav_hbox.add_child(btn_camp_compendium)
+	
+	var btn_camp_menu = Button.new()
+	btn_camp_menu.custom_minimum_size = Vector2(200, 42)
+	btn_camp_menu.text = "🏛 ГЛАВНОЕ МЕНЮ"
+	btn_camp_menu.add_theme_font_size_override("font_size", 13)
+	btn_camp_menu.pressed.connect(_open_main_menu)
+	camp_nav_hbox.add_child(btn_camp_menu)
+	
+	# 6. TopHUD Menu Button
+	var left_ctrls = $UI/TopHUD/LeftControls
+	var btn_top_menu = Button.new()
+	btn_top_menu.custom_minimum_size = Vector2(100, 36)
+	btn_top_menu.text = "🏛 МЕНЮ"
+	btn_top_menu.add_theme_font_size_override("font_size", 13)
+	btn_top_menu.pressed.connect(_open_main_menu)
+	left_ctrls.add_child(btn_top_menu)
+	left_ctrls.move_child(btn_top_menu, 0)
+	
+	# 7. Gothic Main Menu Modal
+	_build_main_menu_modal()
+	
+	# 8. Bestiary & Armory Compendium Modal
+	_build_compendium_modal()
+
+func _build_main_menu_modal():
+	main_menu_modal = Control.new()
+	main_menu_modal.set_anchors_preset(Control.PRESET_FULL_RECT)
+	main_menu_modal.visible = false
+	
+	var dimmer = ColorRect.new()
+	dimmer.set_anchors_preset(Control.PRESET_FULL_RECT)
+	dimmer.color = Color(0.02, 0.015, 0.03, 0.98)
+	main_menu_modal.add_child(dimmer)
+	
+	var center = CenterContainer.new()
+	center.set_anchors_preset(Control.PRESET_FULL_RECT)
+	main_menu_modal.add_child(center)
+	
+	var menu_panel = PanelContainer.new()
+	menu_panel.custom_minimum_size = Vector2(520, 480)
+	var m_style = StyleBoxFlat.new()
+	m_style.bg_color = Color(0.07, 0.05, 0.09, 0.98)
+	m_style.border_color = Color(0.8, 0.65, 0.3, 0.9)
+	m_style.border_width_left = 2
+	m_style.border_width_top = 2
+	m_style.border_width_right = 2
+	m_style.border_width_bottom = 2
+	m_style.corner_radius_top_left = 8
+	m_style.corner_radius_top_right = 8
+	m_style.corner_radius_bottom_left = 8
+	m_style.corner_radius_bottom_right = 8
+	m_style.content_margin_left = 24
+	m_style.content_margin_top = 24
+	m_style.content_margin_right = 24
+	m_style.content_margin_bottom = 24
+	menu_panel.add_theme_stylebox_override("panel", m_style)
+	center.add_child(menu_panel)
+	
+	var vbox = VBoxContainer.new()
+	vbox.add_theme_constant_override("separation", 14)
+	menu_panel.add_child(vbox)
+	
+	var title = Label.new()
+	title.text = "GRIMSPIRE: ASCENT OF THE CURSED"
+	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	title.add_theme_font_size_override("font_size", 22)
+	title.add_theme_color_override("font_color", Color(1.0, 0.85, 0.3))
+	vbox.add_child(title)
+	
+	var subtitle = Label.new()
+	subtitle.text = "Мрачный Автобатлер • Восхождение Проклятого"
+	subtitle.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	subtitle.add_theme_font_size_override("font_size", 13)
+	subtitle.add_theme_color_override("font_color", Color(0.8, 0.75, 0.85))
+	vbox.add_child(subtitle)
+	
+	var sep = HSeparator.new()
+	vbox.add_child(sep)
+	
+	var b_ascend = Button.new()
+	b_ascend.text = "⚔ НАЧАТЬ ВОСХОЖДЕНИЕ"
+	b_ascend.custom_minimum_size = Vector2(0, 48)
+	b_ascend.add_theme_font_size_override("font_size", 15)
+	b_ascend.pressed.connect(func():
+		main_menu_modal.visible = false
+		_on_ascend_pressed()
+	)
+	vbox.add_child(b_ascend)
+	
+	var b_camp = Button.new()
+	b_camp.text = "🩸 КРОВАВЫЙ АЛТАРЬ (ЛАГЕРЬ)"
+	b_camp.custom_minimum_size = Vector2(0, 44)
+	b_camp.add_theme_font_size_override("font_size", 14)
+	b_camp.pressed.connect(func():
+		main_menu_modal.visible = false
+		_enter_camp_state()
+	)
+	vbox.add_child(b_camp)
+	
+	var b_comp = Button.new()
+	b_comp.text = "📖 БЕСТИАРИЙ И АРСЕНАЛ"
+	b_comp.custom_minimum_size = Vector2(0, 44)
+	b_comp.add_theme_font_size_override("font_size", 14)
+	b_comp.pressed.connect(func():
+		main_menu_modal.visible = false
+		_open_compendium()
+	)
+	vbox.add_child(b_comp)
+	
+	var b_settings = Button.new()
+	b_settings.text = "⚙ НАСТРОЙКИ"
+	b_settings.custom_minimum_size = Vector2(0, 44)
+	b_settings.add_theme_font_size_override("font_size", 14)
+	b_settings.pressed.connect(func():
+		_toggle_settings_modal()
+	)
+	vbox.add_child(b_settings)
+	
+	var b_quit = Button.new()
+	b_quit.text = "🚪 ВЫХОД ИЗ ИГРЫ"
+	b_quit.custom_minimum_size = Vector2(0, 40)
+	b_quit.add_theme_font_size_override("font_size", 13)
+	b_quit.pressed.connect(func(): get_tree().quit())
+	vbox.add_child(b_quit)
+	
+	ui_canvas.add_child(main_menu_modal)
+
+func _build_compendium_modal():
+	compendium_modal = Control.new()
+	compendium_modal.set_anchors_preset(Control.PRESET_FULL_RECT)
+	compendium_modal.visible = false
+	
+	var dimmer = ColorRect.new()
+	dimmer.set_anchors_preset(Control.PRESET_FULL_RECT)
+	dimmer.color = Color(0.02, 0.015, 0.03, 0.96)
+	compendium_modal.add_child(dimmer)
+	
+	var panel = PanelContainer.new()
+	panel.offset_left = 60.0
+	panel.offset_top = 40.0
+	panel.offset_right = 1220.0
+	panel.offset_bottom = 680.0
+	
+	var p_style = StyleBoxFlat.new()
+	p_style.bg_color = Color(0.07, 0.05, 0.09, 0.98)
+	p_style.border_color = Color(0.8, 0.65, 0.3, 0.9)
+	p_style.border_width_left = 2
+	p_style.border_width_top = 2
+	p_style.border_width_right = 2
+	p_style.border_width_bottom = 2
+	p_style.corner_radius_top_left = 8
+	p_style.corner_radius_top_right = 8
+	p_style.corner_radius_bottom_left = 8
+	p_style.corner_radius_bottom_right = 8
+	p_style.content_margin_left = 20
+	p_style.content_margin_top = 18
+	p_style.content_margin_right = 20
+	p_style.content_margin_bottom = 18
+	panel.add_theme_stylebox_override("panel", p_style)
+	compendium_modal.add_child(panel)
+	
+	var vbox = VBoxContainer.new()
+	vbox.add_theme_constant_override("separation", 10)
+	panel.add_child(vbox)
+	
+	var header_hbox = HBoxContainer.new()
+	vbox.add_child(header_hbox)
+	
+	var title = Label.new()
+	title.text = "📖 БЕСТИАРИЙ И АРСЕНАЛ ШПИЛЯ"
+	title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	title.add_theme_font_size_override("font_size", 20)
+	title.add_theme_color_override("font_color", Color(1.0, 0.85, 0.3))
+	header_hbox.add_child(title)
+	
+	var btn_close = Button.new()
+	btn_close.text = "✖ ЗАКРЫТЬ"
+	btn_close.custom_minimum_size = Vector2(120, 36)
+	btn_close.pressed.connect(func(): compendium_modal.visible = false)
+	header_hbox.add_child(btn_close)
+	
+	var tabs = TabContainer.new()
+	tabs.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	vbox.add_child(tabs)
+	
+	# Tab 1: Enemies
+	var scroll_en = ScrollContainer.new()
+	scroll_en.name = "💀 Монстры Шпиля (16)"
+	var grid_en = GridContainer.new()
+	grid_en.columns = 2
+	grid_en.add_theme_constant_override("h_separation", 14)
+	grid_en.add_theme_constant_override("v_separation", 14)
+	grid_en.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	scroll_en.add_child(grid_en)
+	tabs.add_child(scroll_en)
+	
+	for e in game_data.enemies:
+		var card = PanelContainer.new()
+		card.custom_minimum_size = Vector2(510, 80)
+		var c_box = HBoxContainer.new()
+		c_box.add_theme_constant_override("separation", 12)
+		card.add_child(c_box)
+		
+		var icon = TextureRect.new()
+		icon.custom_minimum_size = Vector2(64, 64)
+		icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+		icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+		var e_id = e.get("id", "")
+		icon.texture = _get_enemy_texture_for_id(e_id)
+		c_box.add_child(icon)
+		
+		var info = VBoxContainer.new()
+		info.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		c_box.add_child(info)
+		
+		var e_name = localization.get_enemy_name(e_id, e.get("name", ""))
+		var lbl_t = Label.new()
+		lbl_t.text = "%s [%s]" % [e_name, e.get("tier", "")]
+		lbl_t.add_theme_font_size_override("font_size", 13)
+		lbl_t.add_theme_color_override("font_color", Color(1.0, 0.4, 0.4) if e.get("isBoss") else Color(1.0, 0.9, 0.7))
+		info.add_child(lbl_t)
+		
+		var st = e.get("stats", {})
+		var lbl_s = Label.new()
+		lbl_s.text = "ОЗ: %d | Урон: %d | Броня: %d | Скор.: %.2f" % [
+			st.get("MaxHealth", 50), st.get("AttackDamage", 10), st.get("Armor", 0), st.get("AttackSpeed", 1.0)
+		]
+		lbl_s.add_theme_font_size_override("font_size", 10)
+		lbl_s.add_theme_color_override("font_color", Color(0.8, 0.8, 0.85))
+		info.add_child(lbl_s)
+		
+		var lbl_d = Label.new()
+		lbl_d.text = localization.get_enemy_description(e_id, e.get("description", ""))
+		lbl_d.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		lbl_d.add_theme_font_size_override("font_size", 10)
+		lbl_d.add_theme_color_override("font_color", Color(0.65, 0.65, 0.7))
+		info.add_child(lbl_d)
+		
+		grid_en.add_child(card)
+	
+	# Tab 2: Items
+	var scroll_it = ScrollContainer.new()
+	scroll_it.name = "🗡 Реликвии и Арсенал (32)"
+	var grid_it = GridContainer.new()
+	grid_it.columns = 2
+	grid_it.add_theme_constant_override("h_separation", 14)
+	grid_it.add_theme_constant_override("v_separation", 14)
+	grid_it.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	scroll_it.add_child(grid_it)
+	tabs.add_child(scroll_it)
+	
+	for itm in game_data.items:
+		var card = PanelContainer.new()
+		card.custom_minimum_size = Vector2(510, 80)
+		var c_box = HBoxContainer.new()
+		c_box.add_theme_constant_override("separation", 12)
+		card.add_child(c_box)
+		
+		var slot = itm.get("slot", "Weapon")
+		var rarity = itm.get("rarity", "Common")
+		var r_color = _get_rarity_color(rarity)
+		
+		var icon = TextureRect.new()
+		icon.custom_minimum_size = Vector2(64, 64)
+		icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+		icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+		icon.texture = item_icons.get(slot, null)
+		icon.modulate = r_color
+		c_box.add_child(icon)
+		
+		var info = VBoxContainer.new()
+		info.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		c_box.add_child(info)
+		
+		var itm_name = localization.get_item_name(itm)
+		var slot_disp = localization.get_slot_name(slot)
+		var rar_disp = localization.get_rarity_name(rarity)
+		var lbl_t = Label.new()
+		lbl_t.text = "%s  [%s • %s]" % [itm_name, rar_disp, slot_disp]
+		lbl_t.add_theme_font_size_override("font_size", 13)
+		lbl_t.add_theme_color_override("font_color", r_color)
+		info.add_child(lbl_t)
+		
+		var s_text = ""
+		var s_dict = itm.get("stats", {})
+		for k in s_dict.keys():
+			s_text += localization.format_stat(k, s_dict[k]) + "  "
+		var lbl_s = Label.new()
+		lbl_s.text = s_text.strip_edges()
+		lbl_s.add_theme_font_size_override("font_size", 10)
+		lbl_s.add_theme_color_override("font_color", Color(0.4, 0.95, 0.6))
+		info.add_child(lbl_s)
+		
+		var lbl_d = Label.new()
+		lbl_d.text = localization.get_item_description(itm)
+		lbl_d.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		lbl_d.add_theme_font_size_override("font_size", 10)
+		lbl_d.add_theme_color_override("font_color", Color(0.7, 0.7, 0.75))
+		info.add_child(lbl_d)
+		
+		grid_it.add_child(card)
+	
+	ui_canvas.add_child(compendium_modal)
+
+func _get_enemy_texture_for_id(e_id: String) -> Texture2D:
+	match e_id:
+		"feeble_skeleton": return tex_enemy_skeleton
+		"spire_imp": return tex_enemy_imp
+		"crypt_ghoul": return tex_enemy_ghoul if tex_enemy_ghoul else tex_enemy_skeleton
+		"tormented_shade": return tex_enemy_shade if tex_enemy_shade else tex_enemy_skeleton
+		"hollow_knight": return tex_enemy_knight
+		"blood_cultist": return tex_enemy_cultist if tex_enemy_cultist else tex_enemy_knight
+		"spire_executioner": return tex_enemy_executioner if tex_enemy_executioner else tex_enemy_knight
+		"boss_gargoyle": return tex_boss_malgorath
+		"boss_flesh_amalgam": return tex_boss_amalgam
+		"boss_valthor": return tex_boss_valthor if tex_boss_valthor else tex_boss_malgorath
+		_: return tex_enemy_skeleton
+
+func _open_main_menu():
+	sound_manager.play_click()
+	main_menu_modal.visible = true
+
+func _open_compendium():
+	sound_manager.play_click()
+	compendium_modal.visible = true
+
+func _on_toggle_speed_pressed():
+	sound_manager.play_click()
+	if combat_speed == 1.0:
+		combat_speed = 1.5
+	elif combat_speed == 1.5:
+		combat_speed = 2.0
+	else:
+		combat_speed = 1.0
+	speed_btn.text = "⏩ %.1fx" % combat_speed
+
 func _apply_ui_theming():
-	# Style panels with dark gothic obsidian theme
 	var panel_style = StyleBoxFlat.new()
 	panel_style.bg_color = Color(0.06, 0.05, 0.08, 0.92)
 	panel_style.border_color = Color(0.35, 0.28, 0.42, 0.75)
@@ -330,16 +977,25 @@ func _process(delta: float):
 	if settings_modal != null and settings_modal.visible:
 		return
 	
-	# Idle breathing animations anchored around -180.0
+	var effective_delta = delta * combat_speed
 	var time = Time.get_ticks_msec() / 1000.0
-	player_sprite.position.y = -180.0 + sin(time * 2.5) * 6.0
-	enemy_sprite.position.y = -180.0 + cos(time * 2.8) * 7.0
+	
+	# Idle breathing animations anchored around -180.0
+	if not is_traversing:
+		player_sprite.position.y = -180.0 + sin(time * 2.5) * 6.0
+		enemy_sprite.position.y = -180.0 + cos(time * 2.8) * 7.0
+		if armor_overlay.visible:
+			armor_overlay.position.y = player_sprite.position.y + 10.0
+		if helm_overlay.visible:
+			helm_overlay.position.y = player_sprite.position.y - 70.0
+		if accessory_aura.visible:
+			accessory_aura.rotation += effective_delta * 1.5
 	
 	if state == GameState.BATTLE:
-		_process_battle_loop(delta)
+		_process_battle_loop(effective_delta)
 
 func _process_battle_loop(delta: float):
-	if enemy_data.is_empty() or player_stats.is_empty():
+	if enemy_data.is_empty() or player_stats.is_empty() or is_traversing:
 		return
 	
 	# Cooldown decrements
@@ -347,7 +1003,10 @@ func _process_battle_loop(delta: float):
 	enemy_attack_cooldown -= delta
 	
 	if player_attack_cooldown <= 0.0:
-		_execute_player_attack()
+		if player_soul >= 100.0:
+			_execute_player_soul_cleave()
+		else:
+			_execute_player_attack()
 		var p_spd = max(0.2, float(player_stats.get("attack_speed", 1.0)))
 		player_attack_cooldown = 1.0 / p_spd
 	
@@ -424,6 +1083,10 @@ func _update_localized_texts():
 	defeat_title.text = localization.get_string("defeat_title")
 	btn_return_altar.text = localization.get_string("btn_return_altar")
 	
+	if btn_skip_draft != null:
+		var bonus_g = 20 + current_floor * 5
+		btn_skip_draft.text = localization.get_string("btn_skip_draft") % bonus_g
+	
 	if gold_label != null and save_manager != null and save_manager.save_data != null:
 		gold_label.text = "%d %s" % [save_manager.save_data.get("PersistentGold", 0), localization.get_string("gold_unit")]
 
@@ -465,6 +1128,8 @@ func _enter_camp_state():
 	battle_hud.visible = false
 	top_hud.visible = true
 	$Arena.visible = false
+	if archway_sprite: archway_sprite.visible = false
+	if chest_sprite: chest_sprite.visible = false
 	
 	floor_banner.text = ""
 	_refresh_camp_ui()
@@ -475,7 +1140,6 @@ func _refresh_camp_ui():
 	altar_gold_label.text = localization.get_string("camp_gold_record") % [gold, max_floor]
 	gold_label.text = "%d %s" % [gold, localization.get_string("gold_unit")]
 	
-	# Populate upgrade items
 	for child in upgrades_container.get_children():
 		upgrades_container.remove_child(child)
 		child.queue_free()
@@ -552,10 +1216,12 @@ func _on_ascend_pressed():
 	current_floor = 1
 	run_gold_earned = 0
 	equipped_items.clear()
+	player_soul = 0.0
 	_calculate_player_stats()
-	_start_floor_battle()
+	_update_player_visuals()
+	_start_floor_battle(true)
 
-func _start_floor_battle():
+func _start_floor_battle(with_walk_entry: bool = false):
 	state = GameState.BATTLE
 	bg_texture.texture = tex_spire_interior
 	camp_panel.visible = false
@@ -564,20 +1230,20 @@ func _start_floor_battle():
 	battle_hud.visible = true
 	top_hud.visible = true
 	$Arena.visible = true
+	if archway_sprite: archway_sprite.visible = true
+	if chest_sprite: chest_sprite.visible = false
+	if room_clear_banner: room_clear_banner.visible = false
 	
-	player_anchor.position = player_base_pos
-	enemy_anchor.position = enemy_base_pos
 	player_sprite.modulate = Color(1, 1, 1, 1)
 	enemy_sprite.modulate = Color(1, 1, 1, 1)
 	
 	enemy_data = game_data.get_enemy_for_floor(current_floor)
 	_setup_enemy_visuals()
+	_update_player_visuals()
 	
-	# Attack timers
 	player_attack_cooldown = 0.5
 	enemy_attack_cooldown = 1.0
 	
-	# HUD Setup
 	var is_boss = enemy_data.get("isBoss", false)
 	var e_name = localization.get_enemy_name(enemy_data.get("id", ""), enemy_data.get("name", ""))
 	if is_boss:
@@ -586,20 +1252,51 @@ func _start_floor_battle():
 		floor_banner.text = localization.get_string("floor_banner") % [current_floor, e_name.to_upper()]
 	
 	gold_label.text = "%d %s" % [save_manager.save_data.get("PersistentGold", 0), localization.get_string("gold_unit")]
-	
 	player_name_label.text = localization.get_string("player_label")
 	enemy_name_label.text = e_name
 	
 	_update_hud()
 	_refresh_equipped_icons()
 	_log("[color=#c0a060]%s[/color]" % [localization.get_string("log_floor_entered") % [current_floor, e_name]])
+	
+	if with_walk_entry:
+		_animate_room_entrance()
+	else:
+		player_anchor.position = player_base_pos
+		enemy_anchor.position = enemy_base_pos
+		is_traversing = false
+
+func _animate_room_entrance():
+	is_traversing = true
+	player_anchor.position = Vector2(80, player_base_pos.y)
+	enemy_anchor.position = Vector2(1150, enemy_base_pos.y)
+	walk_dust.emitting = true
+	enemy_walk_dust.emitting = true
+	
+	sound_manager.play_step()
+	
+	var tw = create_tween().set_parallel(true)
+	tw.tween_property(player_anchor, "position:x", player_base_pos.x, 0.65).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+	tw.tween_property(enemy_anchor, "position:x", enemy_base_pos.x, 0.65).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+	
+	# Weapon ready sway
+	tw.tween_property(weapon_anchor, "rotation_degrees", -22.0, 0.65)
+	
+	tw.chain().tween_callback(func():
+		walk_dust.emitting = false
+		enemy_walk_dust.emitting = false
+		is_traversing = false
+	)
 
 func _setup_enemy_visuals():
 	var enemy_id = enemy_data.get("id", "")
 	var is_boss = enemy_data.get("isBoss", false)
 	
 	if is_boss:
-		if current_floor >= 20:
+		if current_floor >= 30:
+			enemy_sprite.texture = tex_boss_valthor if tex_boss_valthor else tex_boss_malgorath
+			enemy_sprite.scale = Vector2(1.05, 1.05)
+		elif current_floor >= 20:
 			enemy_sprite.texture = tex_boss_amalgam
 			enemy_sprite.scale = Vector2(0.95, 0.95)
 		else:
@@ -608,27 +1305,111 @@ func _setup_enemy_visuals():
 	elif enemy_id == "feeble_skeleton" or current_floor == 1:
 		enemy_sprite.texture = tex_enemy_skeleton
 		enemy_sprite.scale = Vector2(0.85, 0.85)
-	elif enemy_id == "spire_imp" or current_floor <= 4:
+	elif enemy_id == "spire_imp" or current_floor == 2:
 		enemy_sprite.texture = tex_enemy_imp
 		enemy_sprite.scale = Vector2(0.8, 0.8)
-	elif enemy_id == "hollow_knight" or current_floor >= 5:
+	elif enemy_id == "crypt_ghoul" or current_floor == 3:
+		enemy_sprite.texture = tex_enemy_ghoul if tex_enemy_ghoul else tex_enemy_skeleton
+		enemy_sprite.scale = Vector2(0.85, 0.85)
+	elif enemy_id == "tormented_shade" or current_floor == 4:
+		enemy_sprite.texture = tex_enemy_shade if tex_enemy_shade else tex_enemy_skeleton
+		enemy_sprite.scale = Vector2(0.85, 0.85)
+	elif enemy_id == "hollow_knight" or current_floor == 5:
 		enemy_sprite.texture = tex_enemy_knight
 		enemy_sprite.scale = Vector2(0.85, 0.85)
+	elif enemy_id == "blood_cultist":
+		enemy_sprite.texture = tex_enemy_cultist if tex_enemy_cultist else tex_enemy_knight
+		enemy_sprite.scale = Vector2(0.85, 0.85)
+	elif enemy_id == "spire_executioner":
+		enemy_sprite.texture = tex_enemy_executioner if tex_enemy_executioner else tex_enemy_knight
+		enemy_sprite.scale = Vector2(0.9, 0.9)
 	else:
-		enemy_sprite.texture = tex_enemy_skeleton
+		enemy_sprite.texture = tex_enemy_knight
 		enemy_sprite.scale = Vector2(0.85, 0.85)
 	
 	enemy_sprite.modulate = Color(1, 1, 1, 1)
+
+func _update_player_visuals():
+	# 1. Weapon
+	var w = equipped_items.get("Weapon", null)
+	if w:
+		weapon_sprite.visible = true
+		var w_id = w.get("id", "")
+		if "scythe" in w_id:
+			weapon_sprite.texture = tex_gear_weapons.get("scythe")
+		elif "axe" in w_id or "mace" in w_id:
+			weapon_sprite.texture = tex_gear_weapons.get("axe")
+		elif "greatsword" in w_id or "eater" in w_id:
+			weapon_sprite.texture = tex_gear_weapons.get("greatsword")
+		elif "dagger" in w_id or "katana" in w_id:
+			weapon_sprite.texture = tex_gear_weapons.get("dagger")
+		else:
+			weapon_sprite.texture = tex_gear_weapons.get("cleaver")
+		weapon_sprite.modulate = Color(1, 1, 1, 1)
+	else:
+		weapon_sprite.visible = false
+	
+	# 2. Helmet
+	var h = equipped_items.get("Helmet", null)
+	if h:
+		helm_overlay.visible = true
+		var h_id = h.get("id", "")
+		if "thorns" in h_id or "king" in h_id:
+			helm_overlay.texture = tex_gear_helms.get("crown_thorns")
+		elif "hood" in h_id or "cowl" in h_id:
+			helm_overlay.texture = tex_gear_helms.get("hood")
+		else:
+			helm_overlay.texture = tex_gear_helms.get("sallet")
+		helm_overlay.modulate = Color(1, 1, 1, 1)
+	else:
+		helm_overlay.visible = false
+	
+	# 3. Armor
+	var a = equipped_items.get("Armor", null)
+	if a:
+		armor_overlay.visible = true
+		var a_id = a.get("id", "")
+		if "carapace" in a_id or "shroud" in a_id:
+			armor_overlay.texture = tex_gear_armors.get("carapace")
+		else:
+			armor_overlay.texture = tex_gear_armors.get("cuirass")
+		armor_overlay.modulate = Color(1, 1, 1, 1)
+	else:
+		armor_overlay.visible = false
+	
+	# 4. Offhand
+	var o = equipped_items.get("OffHand", null)
+	if o:
+		offhand_sprite.visible = true
+		var o_id = o.get("id", "")
+		if "grimoire" in o_id or "totem" in o_id:
+			offhand_sprite.texture = tex_gear_offhands.get("grimoire")
+		else:
+			offhand_sprite.texture = tex_gear_offhands.get("weeping")
+		offhand_sprite.modulate = Color(1, 1, 1, 1)
+	else:
+		offhand_sprite.visible = false
+	
+	# 5. Accessory
+	var acc = equipped_items.get("Accessory", null)
+	accessory_aura.visible = (acc != null)
 
 # ==============================================================================
 # COMBAT EXECUTION
 # ==============================================================================
 
 func _execute_player_attack():
-	# Lunge animation
+	# Dynamic 3-phase weapon swing
 	var tw = create_tween()
-	tw.tween_property(player_anchor, "position:x", player_base_pos.x + 80, 0.08)
-	tw.tween_property(player_anchor, "position:x", player_base_pos.x, 0.12)
+	# Phase 1: Windup
+	tw.tween_property(weapon_anchor, "rotation_degrees", -65.0, 0.07 / combat_speed)
+	tw.parallel().tween_property(player_anchor, "position:x", player_base_pos.x - 20, 0.07 / combat_speed)
+	# Phase 2: Lunge & Slash
+	tw.tween_property(player_anchor, "position:x", player_base_pos.x + 130, 0.09 / combat_speed)
+	tw.parallel().tween_property(weapon_anchor, "rotation_degrees", 65.0, 0.09 / combat_speed)
+	# Phase 3: Return
+	tw.tween_property(player_anchor, "position:x", player_base_pos.x, 0.12 / combat_speed)
+	tw.parallel().tween_property(weapon_anchor, "rotation_degrees", -20.0, 0.12 / combat_speed)
 	
 	sound_manager.play_slash()
 	_spawn_fx_slash(enemy_anchor.position + Vector2(0, -100))
@@ -646,9 +1427,11 @@ func _execute_player_attack():
 	
 	enemy_data["current_health"] = max(0, enemy_data["current_health"] - dmg)
 	
-	# Visual hit response
+	# Charge Soul Bar
+	player_soul = min(100.0, player_soul + 18.0)
+	
 	_shake_node(enemy_anchor, 8.0 if is_crit else 4.0)
-	_flash_node(enemy_sprite, Color(2, 0.5, 0.5, 1))
+	_flash_node(enemy_sprite, Color(2.5, 0.5, 0.5, 1))
 	_spawn_blood_burst(enemy_anchor.position + Vector2(0, -100))
 	
 	if is_crit:
@@ -669,11 +1452,50 @@ func _execute_player_attack():
 	if enemy_data["current_health"] <= 0:
 		_on_enemy_defeated()
 
-func _execute_enemy_attack():
-	# Enemy lunges
+func _execute_player_soul_cleave():
+	player_soul = 0.0
+	sound_manager.play_soul()
+	
+	# Dramatic leap into the air
 	var tw = create_tween()
-	tw.tween_property(enemy_anchor, "position:x", enemy_base_pos.x - 80, 0.08)
-	tw.tween_property(enemy_anchor, "position:x", enemy_base_pos.x, 0.12)
+	tw.tween_property(player_anchor, "position", player_base_pos + Vector2(100, -70), 0.12 / combat_speed)
+	tw.parallel().tween_property(weapon_anchor, "rotation_degrees", -90.0, 0.12 / combat_speed)
+	
+	tw.tween_property(player_anchor, "position", player_base_pos + Vector2(160, 0), 0.10 / combat_speed)
+	tw.parallel().tween_property(weapon_anchor, "rotation_degrees", 90.0, 0.10 / combat_speed)
+	
+	tw.tween_property(player_anchor, "position", player_base_pos, 0.15 / combat_speed)
+	tw.parallel().tween_property(weapon_anchor, "rotation_degrees", -20.0, 0.15 / combat_speed)
+	
+	_spawn_fx_slash(enemy_anchor.position + Vector2(0, -100))
+	_spawn_fx_slash(enemy_anchor.position + Vector2(0, -70), true)
+	
+	var p_dmg = int(player_stats.get("attack_damage", 15) * 2.5)
+	enemy_data["current_health"] = max(0, enemy_data["current_health"] - p_dmg)
+	
+	_shake_node(enemy_anchor, 12.0)
+	_flash_node(enemy_sprite, Color(3.0, 0.4, 2.0, 1))
+	_spawn_blood_burst(enemy_anchor.position + Vector2(0, -90))
+	_spawn_floating_text(enemy_anchor.position + Vector2(0, -150), localization.get_string("float_soul") % p_dmg, Color(0.9, 0.4, 1.0), 1.5)
+	
+	_log(localization.get_string("log_player_soul") % p_dmg)
+	_update_hud()
+	
+	if enemy_data["current_health"] <= 0:
+		_on_enemy_defeated()
+
+func _execute_enemy_attack():
+	# Telegraph flash before lunge
+	telegraph_glow.visible = true
+	var tw_tel = create_tween()
+	tw_tel.tween_property(telegraph_glow, "modulate:a", 1.0, 0.08 / combat_speed)
+	tw_tel.tween_property(telegraph_glow, "modulate:a", 0.0, 0.08 / combat_speed)
+	tw_tel.tween_callback(func(): telegraph_glow.visible = false)
+	
+	# Enemy lunges forward
+	var tw = create_tween()
+	tw.tween_property(enemy_anchor, "position:x", enemy_base_pos.x - 120, 0.10 / combat_speed)
+	tw.tween_property(enemy_anchor, "position:x", enemy_base_pos.x, 0.14 / combat_speed)
 	
 	sound_manager.play_slash()
 	_spawn_fx_slash(player_anchor.position + Vector2(0, -100), true)
@@ -681,17 +1503,34 @@ func _execute_enemy_attack():
 	var res = game_data.calculate_damage(enemy_data, player_stats)
 	var e_name = localization.get_enemy_name(enemy_data.get("id", ""), enemy_data.get("name", "Enemy"))
 	if res.dodged:
+		# Player back-dash dodge
+		var tw_dodge = create_tween()
+		tw_dodge.tween_property(player_anchor, "position:x", player_base_pos.x - 60, 0.08 / combat_speed)
+		tw_dodge.tween_property(player_anchor, "position:x", player_base_pos.x, 0.12 / combat_speed)
 		_spawn_floating_text(player_anchor.position + Vector2(0, -140), localization.get_string("float_dodge"), Color(0.4, 0.8, 1.0))
 		_log(localization.get_string("log_player_dodge") % e_name)
 		return
 	
 	var dmg = res.damage
+	var is_blocked = res.get("is_blocked", false)
+	
+	if is_blocked and offhand_sprite.visible:
+		# Shield raise block animation
+		var tw_block = create_tween()
+		tw_block.tween_property(offhand_anchor, "position:x", -15.0, 0.06 / combat_speed)
+		tw_block.tween_property(offhand_anchor, "position:x", -45.0, 0.10 / combat_speed)
+		sound_manager.play_block()
+		_spawn_floating_text(player_anchor.position + Vector2(0, -140), localization.get_string("float_block"), Color(0.5, 0.85, 1.0))
+		_log(localization.get_string("log_player_block"))
+	else:
+		sound_manager.play_hit()
+	
 	player_stats["current_health"] = max(0, player_stats["current_health"] - dmg)
+	player_soul = min(100.0, player_soul + 10.0)
 	
 	_shake_node(player_anchor, 6.0)
 	_flash_node(player_sprite, Color(2, 0.4, 0.4, 1))
 	_spawn_blood_burst(player_anchor.position + Vector2(0, -100))
-	sound_manager.play_hit()
 	
 	_spawn_floating_text(player_anchor.position + Vector2(0, -140), "-%d" % dmg, Color(1.0, 0.2, 0.2))
 	_log(localization.get_string("log_enemy_hit") % [e_name, dmg])
@@ -702,7 +1541,7 @@ func _execute_enemy_attack():
 		_on_player_perished()
 
 func _on_enemy_defeated():
-	sound_manager.play_coin()
+	sound_manager.play_room_clear()
 	var base_gold = int(enemy_data.get("gold_reward", 15))
 	var gold_mult = float(player_stats.get("gold_multiplier", 1.0))
 	var total_gold = int(round(base_gold * gold_mult))
@@ -715,27 +1554,40 @@ func _on_enemy_defeated():
 	var e_name = localization.get_enemy_name(enemy_data.get("id", ""), enemy_data.get("name", ""))
 	_log(localization.get_string("log_enemy_defeated") % [e_name, total_gold])
 	
+	# Room Cleared Banner
+	if room_clear_banner:
+		room_clear_banner.visible = true
+	
 	# Death fade of enemy
 	var tw = create_tween()
-	tw.tween_property(enemy_sprite, "modulate:a", 0.0, 0.4)
-	tw.tween_callback(_enter_draft_state)
+	tw.tween_property(enemy_sprite, "modulate:a", 0.0, 0.35)
+	
+	# Player walks forward towards the loot chest
+	if chest_sprite:
+		chest_sprite.visible = true
+	walk_dust.emitting = true
+	sound_manager.play_step()
+	
+	tw.tween_property(player_anchor, "position:x", 520.0, 0.55).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+	tw.tween_callback(func():
+		walk_dust.emitting = false
+		_enter_draft_state()
+	)
 
 func _on_player_perished():
 	sound_manager.play_death()
 	_log(localization.get_string("log_player_died"))
 	
-	# Player dissolution
 	var tw = create_tween()
 	tw.tween_property(player_sprite, "modulate", Color(0.2, 0.05, 0.05, 0.0), 0.6)
 	tw.tween_callback(_enter_defeat_state)
 
 # ==============================================================================
-# DRAFT MODAL (REWARD CHOICES)
+# DRAFT MODAL (REWARD CHOICES & SALVAGE OPTION)
 # ==============================================================================
 
 func _enter_draft_state():
 	state = GameState.DRAFT
-	# HIDE combat UI completely to prevent overlaps!
 	battle_hud.visible = false
 	top_hud.visible = true
 	$Arena.visible = false
@@ -751,7 +1603,11 @@ func _refresh_draft_ui():
 	draft_subtitle.text = localization.get_string("draft_subtitle")
 	draft_gear_header.text = localization.get_string("draft_current_gear")
 	
-	# Populate current equipped items row for reference
+	if btn_skip_draft != null:
+		var bonus_g = 20 + current_floor * 5
+		btn_skip_draft.text = localization.get_string("btn_skip_draft") % bonus_g
+	
+	# Current equipped gear bar (5 slots)
 	for child in draft_gear_bar.get_children():
 		draft_gear_bar.remove_child(child)
 		child.queue_free()
@@ -826,7 +1682,6 @@ func _create_draft_card(item: Dictionary) -> Control:
 	var rarity = item.get("rarity", "Common")
 	var rarity_color = _get_rarity_color(rarity)
 	
-	# Card Styled Background
 	var card_style = StyleBoxFlat.new()
 	card_style.bg_color = Color(0.08, 0.07, 0.11, 0.98)
 	card_style.border_color = rarity_color
@@ -848,7 +1703,6 @@ func _create_draft_card(item: Dictionary) -> Control:
 	vbox.add_theme_constant_override("separation", 8)
 	container.add_child(vbox)
 	
-	# Rarity & Slot Header
 	var rarity_disp = localization.get_rarity_name(rarity).to_upper()
 	var slot_disp = localization.get_slot_name(slot).to_upper()
 	var lbl_slot = Label.new()
@@ -858,7 +1712,6 @@ func _create_draft_card(item: Dictionary) -> Control:
 	lbl_slot.add_theme_font_size_override("font_size", 12)
 	vbox.add_child(lbl_slot)
 	
-	# Icon Frame
 	var icon_box = PanelContainer.new()
 	icon_box.custom_minimum_size = Vector2(80, 80)
 	icon_box.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
@@ -886,7 +1739,6 @@ func _create_draft_card(item: Dictionary) -> Control:
 		icon_box.add_child(tex_rect)
 	vbox.add_child(icon_box)
 	
-	# Name
 	var itm_name = localization.get_item_name(item)
 	var lbl_name = Label.new()
 	lbl_name.text = itm_name
@@ -896,7 +1748,6 @@ func _create_draft_card(item: Dictionary) -> Control:
 	lbl_name.add_theme_color_override("font_color", Color(1.0, 0.95, 0.85))
 	vbox.add_child(lbl_name)
 	
-	# Description
 	var itm_desc = localization.get_item_description(item)
 	var lbl_desc = Label.new()
 	lbl_desc.text = itm_desc
@@ -906,7 +1757,6 @@ func _create_draft_card(item: Dictionary) -> Control:
 	lbl_desc.add_theme_font_size_override("font_size", 11)
 	vbox.add_child(lbl_desc)
 	
-	# Stats breakdown
 	var stats_text = ""
 	var s = item.get("stats", {})
 	for k in s.keys():
@@ -920,7 +1770,6 @@ func _create_draft_card(item: Dictionary) -> Control:
 	lbl_stats.add_theme_font_size_override("font_size", 12)
 	vbox.add_child(lbl_stats)
 	
-	# Slot Replacement Info
 	var cur_equipped = equipped_items.get(slot, null)
 	var lbl_replace = Label.new()
 	lbl_replace.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
@@ -966,8 +1815,8 @@ func _on_item_drafted(item: Dictionary):
 	
 	current_floor += 1
 	_calculate_player_stats()
+	_update_player_visuals()
 	
-	# Moderate heal between floors (25% max HP)
 	var max_hp = player_stats.get("max_health", 100)
 	var heal_amt = int(round(max_hp * 0.25))
 	player_stats["current_health"] = min(max_hp, player_stats.get("current_health", max_hp) + heal_amt)
@@ -977,7 +1826,28 @@ func _on_item_drafted(item: Dictionary):
 	_log(localization.get_string("log_equipped") % [itm_name, slot_name])
 	_log(localization.get_string("log_heal_boon") % heal_amt)
 	
-	_start_floor_battle()
+	_start_floor_battle(true)
+
+func _on_skip_draft_pressed():
+	current_draft_items.clear()
+	sound_manager.play_coin()
+	
+	var bonus_gold = 20 + current_floor * 5
+	save_manager.add_gold(bonus_gold)
+	run_gold_earned += bonus_gold
+	gold_label.text = "%d %s" % [save_manager.save_data.get("PersistentGold", 0), localization.get_string("gold_unit")]
+	
+	current_floor += 1
+	_calculate_player_stats()
+	
+	var max_hp = player_stats.get("max_health", 100)
+	var heal_amt = int(round(max_hp * 0.25))
+	player_stats["current_health"] = min(max_hp, player_stats.get("current_health", max_hp) + heal_amt)
+	
+	_log(localization.get_string("log_salvaged") % bonus_gold)
+	_log(localization.get_string("log_heal_boon") % heal_amt)
+	
+	_start_floor_battle(true)
 
 # ==============================================================================
 # DEFEAT MODAL
@@ -985,7 +1855,6 @@ func _on_item_drafted(item: Dictionary):
 
 func _enter_defeat_state():
 	state = GameState.DEFEAT
-	# HIDE combat UI completely!
 	battle_hud.visible = false
 	top_hud.visible = true
 	$Arena.visible = false
@@ -1007,7 +1876,9 @@ func _on_return_altar_pressed():
 	current_floor = 1
 	run_gold_earned = 0
 	equipped_items.clear()
+	player_soul = 0.0
 	_calculate_player_stats()
+	_update_player_visuals()
 	_enter_camp_state()
 
 # ==============================================================================
@@ -1033,7 +1904,6 @@ func _calculate_player_stats():
 	var dodge = 0.0
 	var gold_mult = 1.0 + (gold_rank * 0.08)
 	
-	# Add equipment bonuses
 	for slot in equipped_items.keys():
 		var itm = equipped_items[slot]
 		var s = itm.get("stats", {})
@@ -1084,6 +1954,15 @@ func _update_hud():
 	player_hp_bar.max_value = p_max
 	player_hp_bar.value = p_cur
 	player_hp_label.text = "%d / %d %s" % [p_cur, p_max, localization.get_string("hp_unit", "HP")]
+	
+	if soul_bar != null:
+		soul_bar.value = player_soul
+		if player_soul >= 100.0:
+			soul_label.text = "★ РАЗРЫВ ДУШИ ГОТОВ! ★"
+			soul_label.add_theme_color_override("font_color", Color(1.0, 0.9, 0.2))
+		else:
+			soul_label.text = "⚡ ДУША: %d%%" % int(player_soul)
+			soul_label.add_theme_color_override("font_color", Color(1.0, 0.9, 1.0))
 	
 	var p_dmg = player_stats.get("attack_damage", 0)
 	var p_arm = player_stats.get("armor", 0)
