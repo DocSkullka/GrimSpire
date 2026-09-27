@@ -575,29 +575,30 @@ func _build_enhanced_ui():
 	var camp_vbox = $UI/CampPanel/VBox
 	var camp_nav_hbox = HBoxContainer.new()
 	camp_nav_hbox.alignment = BoxContainer.ALIGNMENT_CENTER
-	camp_nav_hbox.add_theme_constant_override("separation", 16)
+	camp_nav_hbox.add_theme_constant_override("separation", 10)
 	camp_vbox.add_child(camp_nav_hbox)
 	
 	var btn_camp_party = Button.new()
-	btn_camp_party.custom_minimum_size = Vector2(230, 42)
-	btn_camp_party.text = "👥 ОТРЯД СПУТНИКОВ (4)"
-	btn_camp_party.add_theme_font_size_override("font_size", 13)
+	btn_camp_party.custom_minimum_size = Vector2(200, 36)
+	btn_camp_party.text = "👥 СПУТНИКИ (4)"
+	btn_camp_party.add_theme_font_size_override("font_size", 12)
 	btn_camp_party.pressed.connect(_open_party_modal)
 	camp_nav_hbox.add_child(btn_camp_party)
 	
 	var btn_camp_compendium = Button.new()
-	btn_camp_compendium.custom_minimum_size = Vector2(240, 42)
-	btn_camp_compendium.text = "📖 БЕСТИАРИЙ И АРСЕНАЛ"
-	btn_camp_compendium.add_theme_font_size_override("font_size", 13)
+	btn_camp_compendium.custom_minimum_size = Vector2(200, 36)
+	btn_camp_compendium.text = "📖 БЕСТИАРИЙ"
+	btn_camp_compendium.add_theme_font_size_override("font_size", 12)
 	btn_camp_compendium.pressed.connect(_open_compendium)
 	camp_nav_hbox.add_child(btn_camp_compendium)
 	
 	var btn_camp_menu = Button.new()
-	btn_camp_menu.custom_minimum_size = Vector2(200, 42)
+	btn_camp_menu.custom_minimum_size = Vector2(410, 30)
+	btn_camp_menu.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 	btn_camp_menu.text = "🏛 ГЛАВНОЕ МЕНЮ"
-	btn_camp_menu.add_theme_font_size_override("font_size", 13)
+	btn_camp_menu.add_theme_font_size_override("font_size", 12)
 	btn_camp_menu.pressed.connect(_open_main_menu)
-	camp_nav_hbox.add_child(btn_camp_menu)
+	camp_vbox.add_child(btn_camp_menu)
 	
 	# 6. TopHUD Menu Button
 	var left_ctrls = $UI/TopHUD/LeftControls
@@ -940,14 +941,32 @@ func _init_rebirth_3d():
 		rebirth_3d.setup_3d_world(self)
 		for role in party_members:
 			rebirth_3d.set_companion_active(role, party_members[role]["active"])
+		bg_texture.visible = false
+		ground_shadow.visible = false
+		player_anchor.visible = false
+		enemy_anchor.visible = false
+		player_sprite.visible = false
+		enemy_sprite.visible = false
+		if archway_sprite: archway_sprite.visible = false
+		if chest_sprite: chest_sprite.visible = false
 
 func _build_party_hud():
 	if battle_hud == null: return
 	party_hud_container = VBoxContainer.new()
-	party_hud_container.position = Vector2(40, 540)
-	party_hud_container.custom_minimum_size = Vector2(320, 140)
-	party_hud_container.add_theme_constant_override("separation", 4)
+	party_hud_container.position = Vector2(32, 475)
+	party_hud_container.custom_minimum_size = Vector2(330, 115)
+	party_hud_container.add_theme_constant_override("separation", 3)
 	battle_hud.add_child(party_hud_container)
+
+	if player_hp_bar:
+		player_hp_bar.visible = false
+
+	if equip_icons_container:
+		equip_icons_container.position = Vector2(32, 598)
+	var stats_p = battle_hud.get_node_or_null("PlayerStatsPanel")
+	if stats_p:
+		stats_p.position = Vector2(32, 646)
+		stats_p.custom_minimum_size = Vector2(330, 48)
 
 	var roles = [
 		{"id": "bulwark", "icon": "🛡", "col": Color(0.3, 0.7, 1.0)},
@@ -1711,6 +1730,13 @@ func _on_fullscreen_toggled(button_pressed: bool):
 func _enter_camp_state():
 	state = GameState.CAMP
 	bg_texture.texture = tex_camp_altar
+	if rebirth_3d:
+		bg_texture.visible = false
+		ground_shadow.visible = false
+		player_anchor.visible = false
+		enemy_anchor.visible = false
+		player_sprite.visible = false
+		enemy_sprite.visible = false
 	camp_panel.visible = true
 	draft_modal.visible = false
 	defeat_modal.visible = false
@@ -1746,7 +1772,8 @@ func _refresh_camp_ui():
 		var cost = base_cost * (rank + 1)
 		
 		var panel = PanelContainer.new()
-		panel.custom_minimum_size = Vector2(700, 60)
+		panel.custom_minimum_size = Vector2(400, 56)
+		panel.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		
 		var p_style = StyleBoxFlat.new()
 		p_style.bg_color = Color(0.08, 0.06, 0.10, 0.88)
@@ -1759,14 +1786,14 @@ func _refresh_camp_ui():
 		p_style.corner_radius_top_right = 6
 		p_style.corner_radius_bottom_left = 6
 		p_style.corner_radius_bottom_right = 6
-		p_style.content_margin_left = 14
-		p_style.content_margin_top = 8
-		p_style.content_margin_right = 14
-		p_style.content_margin_bottom = 8
+		p_style.content_margin_left = 10
+		p_style.content_margin_top = 6
+		p_style.content_margin_right = 10
+		p_style.content_margin_bottom = 6
 		panel.add_theme_stylebox_override("panel", p_style)
 		
 		var hbox = HBoxContainer.new()
-		hbox.add_theme_constant_override("separation", 16)
+		hbox.add_theme_constant_override("separation", 10)
 		panel.add_child(hbox)
 		
 		var upg_name = localization.get_upgrade_name(type_name, upg.get("name", ""))
@@ -1779,19 +1806,22 @@ func _refresh_camp_ui():
 		
 		var lbl_title = Label.new()
 		lbl_title.text = "%s  [%s %d] — %s" % [upg_name, localization.get_string("rank"), rank, upg_bonus]
-		lbl_title.add_theme_font_size_override("font_size", 14)
+		lbl_title.add_theme_font_size_override("font_size", 12)
 		lbl_title.add_theme_color_override("font_color", Color(1.0, 0.88, 0.4))
+		lbl_title.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 		info_vbox.add_child(lbl_title)
 		
 		var lbl_desc = Label.new()
 		lbl_desc.text = upg_desc
-		lbl_desc.add_theme_font_size_override("font_size", 11)
+		lbl_desc.add_theme_font_size_override("font_size", 10)
 		lbl_desc.add_theme_color_override("font_color", Color(0.7, 0.7, 0.75))
+		lbl_desc.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 		info_vbox.add_child(lbl_desc)
 		
 		var btn_upg = Button.new()
-		btn_upg.custom_minimum_size = Vector2(170, 38)
+		btn_upg.custom_minimum_size = Vector2(100, 34)
 		btn_upg.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+		btn_upg.add_theme_font_size_override("font_size", 11)
 		btn_upg.text = localization.get_string("upgrade_btn") % cost
 		btn_upg.disabled = (gold < cost)
 		btn_upg.pressed.connect(func(): _on_buy_upgrade(type_name, cost))
@@ -1832,8 +1862,18 @@ func _start_floor_battle(with_walk_entry: bool = false):
 	battle_hud.visible = true
 	top_hud.visible = true
 	$Arena.visible = true
-	if archway_sprite: archway_sprite.visible = true
-	if chest_sprite: chest_sprite.visible = false
+	if rebirth_3d:
+		bg_texture.visible = false
+		ground_shadow.visible = false
+		player_anchor.visible = false
+		enemy_anchor.visible = false
+		player_sprite.visible = false
+		enemy_sprite.visible = false
+		if archway_sprite: archway_sprite.visible = false
+		if chest_sprite: chest_sprite.visible = false
+	else:
+		if archway_sprite: archway_sprite.visible = true
+		if chest_sprite: chest_sprite.visible = false
 	if chest_modal: chest_modal.visible = false
 	if room_clear_banner: room_clear_banner.visible = false
 	
@@ -2435,8 +2475,9 @@ func _on_enemy_defeated():
 	
 	# Player walks forward towards the loot chest
 	if chest_sprite:
-		chest_sprite.visible = true
-	walk_dust.emitting = true
+		chest_sprite.visible = (rebirth_3d == null)
+	if rebirth_3d == null:
+		walk_dust.emitting = true
 	sound_manager.play_step()
 	
 	if rebirth_3d:

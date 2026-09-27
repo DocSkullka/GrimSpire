@@ -142,7 +142,7 @@ light_energy = 2.0
 omni_range = 4.5
 
 [node name="IronGate" type="Node3D" parent="Environment" unique_id=239349497 instance=ExtResource("4_37kgh")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -6.2, 0, -0.2)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2.2, 0, -0.2)
 
 [node name="ElevatorPlatform" type="Node3D" parent="Environment" unique_id=1353538912 instance=ExtResource("5_gtawn")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 6.5, 0, 0)

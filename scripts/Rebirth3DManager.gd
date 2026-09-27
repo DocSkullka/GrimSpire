@@ -149,14 +149,14 @@ func set_stage_camp():
 		_play_gate_anim("idle")
 
 	if cam_3d:
-		cam_3d.position = Vector3(-1.0, 1.85, 5.4)
+		cam_3d.position = Vector3(-0.6, 1.85, 5.2)
 		cam_3d.rotation_degrees = Vector3(-5.0, 0.0, 0.0)
 
-	# Reset party formation near campfire
+	# Reset party formation near campfire (positioned nicely on right 60% of screen)
 	for role in party_slots:
 		var slot = party_slots[role]
 		if slot:
-			slot.position = FORMATION_POS[role] + Vector3(-0.5, 0.0, 0.0)
+			slot.position = FORMATION_POS[role] - Vector3(1.2, 0.0, 0.0)
 		play_companion_anim(role, "idle")
 
 	if enemy_model:
@@ -166,21 +166,26 @@ func animate_ascent_through_gate(callback: Callable):
 	# 1. Gate portcullis lifts up
 	_play_gate_anim("open")
 
-	# 2. Party walks forward through gate
+	# 2. Party walks forward through gate into Spire corridor
 	for role in party_slots:
 		play_companion_anim(role, "walk")
 
 	var tw = main_3d.create_tween()
-	# Camera tracks forward
-	tw.tween_property(cam_3d, "position:x", 1.5, 1.2).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN_OUT)
+	# Camera tracks smoothly to battle position
+	tw.tween_property(cam_3d, "position:x", 0.0, 1.2).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN_OUT)
 	for role in party_slots:
 		var slot = party_slots[role]
 		if slot:
-			tw.parallel().tween_property(slot, "position:x", slot.position.x + 3.0, 1.2)
+			tw.parallel().tween_property(slot, "position:x", FORMATION_POS[role].x, 1.2)
 
 	tw.tween_callback(func():
 		for role in party_slots:
+			var slot = party_slots[role]
+			if slot:
+				slot.position = FORMATION_POS[role]
 			play_companion_anim(role, "idle")
+		if iron_gate:
+			iron_gate.visible = false
 		if callback.is_valid():
 			callback.call()
 	)
@@ -319,11 +324,16 @@ func animate_elevator_ascent(callback: Callable):
 	tw.parallel().tween_property(cam_3d, "position:y", cam_3d.position.y + 4.0, 1.2).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
 
 	tw.tween_callback(func():
-		if elevator: elevator.position.y = 0.0
+		if elevator:
+			elevator.position = Vector3(6.5, 0.0, 0.0)
+			elevator.visible = false
 		for role in party_slots:
 			var slot = party_slots[role]
-			if slot: slot.position.y = 0.0
-		if cam_3d: cam_3d.position.y = 1.95
+			if slot:
+				slot.position = FORMATION_POS[role]
+				play_companion_anim(role, "idle")
+		if cam_3d:
+			cam_3d.position = Vector3(0.0, 1.95, 5.9)
 		if callback.is_valid():
 			callback.call()
 	)

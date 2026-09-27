@@ -577,6 +577,311 @@ def build_cultist():
     export_and_render("enemy_cultist")
 
 # =============================================================================
+# 5b. ENEMIES: SKELETON, IMP, HOLLOW KNIGHT, GARGOYLE, AMALGAM
+# =============================================================================
+def build_skeleton():
+    print(">>> Building Enemy: Feeble Skeleton...")
+    clear_scene()
+    setup_render_settings(450, 600)
+
+    mat_bone = create_mat("AncientBone", (0.82, 0.79, 0.72), roughness=0.85)
+    mat_dark_bone = create_mat("DarkBone", (0.55, 0.52, 0.48), roughness=0.9)
+    mat_rusty_iron = create_mat("RustyIron", (0.35, 0.28, 0.24), roughness=0.7, metallic=0.7)
+    mat_eye_glow = create_mat("GhostEyeGlow", (0.4, 0.9, 1.0), roughness=0.3, emission_color=(0.3, 0.8, 1.0), emission_strength=4.0)
+
+    rig = build_humanoid_rig("SkeletonRig")
+
+    bpy.ops.mesh.primitive_cube_add(size=0.3, location=(0, 0, 0.95))
+    pelvis = bpy.context.active_object
+    pelvis.scale = (0.7, 0.4, 0.4)
+    apply_mat(pelvis, mat_dark_bone)
+    attach_mesh_to_bone(pelvis, rig, "Hips")
+
+    for r in range(4):
+        bpy.ops.mesh.primitive_torus_add(major_radius=0.18 - r * 0.015, minor_radius=0.03, location=(0, 0, 1.25 + r * 0.12))
+        rib = bpy.context.active_object
+        rib.scale = (1.0, 0.7, 0.6)
+        apply_mat(rib, mat_bone)
+        attach_mesh_to_bone(rib, rig, "Chest")
+
+    bpy.ops.mesh.primitive_cylinder_add(radius=0.04, depth=0.6, location=(0, -0.02, 1.45))
+    spine = bpy.context.active_object
+    apply_mat(spine, mat_dark_bone)
+    attach_mesh_to_bone(spine, rig, "Chest")
+
+    bpy.ops.mesh.primitive_uv_sphere_add(radius=0.22, location=(0, 0, 2.1))
+    skull = bpy.context.active_object
+    apply_mat(skull, mat_bone)
+    attach_mesh_to_bone(skull, rig, "Head")
+
+    bpy.ops.mesh.primitive_cube_add(size=0.12, location=(0, -0.08, 1.95))
+    jaw = bpy.context.active_object
+    jaw.scale = (0.8, 1.2, 0.5)
+    apply_mat(jaw, mat_bone)
+    attach_mesh_to_bone(jaw, rig, "Head")
+
+    for side in [-0.07, 0.07]:
+        bpy.ops.mesh.primitive_uv_sphere_add(radius=0.04, location=(side, -0.18, 2.12))
+        eye = bpy.context.active_object
+        apply_mat(eye, mat_eye_glow)
+        attach_mesh_to_bone(eye, rig, "Head")
+
+    for side, sign in [("L", 1), ("R", -1)]:
+        bpy.ops.mesh.primitive_cylinder_add(radius=0.035, depth=0.6, location=(sign * 0.6, 0, 1.4))
+        arm_mesh = bpy.context.active_object
+        apply_mat(arm_mesh, mat_bone)
+        attach_mesh_to_bone(arm_mesh, rig, f"Arm_{side}")
+
+        bpy.ops.mesh.primitive_cylinder_add(radius=0.04, depth=0.7, location=(sign * 0.22, 0, 0.45))
+        leg_mesh = bpy.context.active_object
+        apply_mat(leg_mesh, mat_bone)
+        attach_mesh_to_bone(leg_mesh, rig, f"Leg_{side}")
+
+    bpy.ops.mesh.primitive_cube_add(size=0.08, location=(-0.75, -0.25, 1.3))
+    blade = bpy.context.active_object
+    blade.scale = (0.15, 0.04, 8.0)
+    apply_mat(blade, mat_rusty_iron)
+    attach_mesh_to_bone(blade, rig, "Arm_R")
+
+    bpy.ops.mesh.primitive_cube_add(size=0.06, location=(-0.75, -0.25, 1.0))
+    guard = bpy.context.active_object
+    guard.scale = (2.2, 0.6, 0.6)
+    apply_mat(guard, mat_rusty_iron)
+    attach_mesh_to_bone(guard, rig, "Arm_R")
+
+    add_standard_animations(rig, weapon_side="R")
+
+    setup_lighting(key_pos=(2.2, -4.0, 3.0), key_color=(0.85, 0.9, 1.0), key_energy=110.0,
+                   rim_pos=(-2.5, 2.5, 2.5), rim_color=(0.2, 0.6, 1.0), rim_energy=90.0)
+    setup_camera(location=(0, -4.8, 1.55), rotation=(1.52, 0, 0))
+    export_and_render("enemy_skeleton")
+
+def build_imp():
+    print(">>> Building Enemy: Spire Imp...")
+    clear_scene()
+    setup_render_settings(450, 600)
+
+    mat_skin = create_mat("ImpFlesh", (0.55, 0.15, 0.12), roughness=0.75)
+    mat_horn = create_mat("ImpDarkHorn", (0.15, 0.1, 0.12), roughness=0.6)
+    mat_obsidian = create_mat("ImpObsidian", (0.1, 0.1, 0.12), roughness=0.3, metallic=0.6,
+                              emission_color=(0.9, 0.2, 0.1), emission_strength=2.5)
+
+    rig = build_humanoid_rig("ImpRig")
+
+    bpy.ops.mesh.primitive_cube_add(size=0.35, location=(0, 0, 1.35))
+    torso = bpy.context.active_object
+    torso.scale = (0.75, 0.5, 0.8)
+    apply_mat(torso, mat_skin)
+    attach_mesh_to_bone(torso, rig, "Chest")
+
+    for side in [-0.25, 0.25]:
+        bpy.ops.mesh.primitive_cone_add(radius1=0.25, depth=0.6, location=(side, 0.2, 1.45))
+        wing = bpy.context.active_object
+        wing.scale = (0.8, 0.1, 1.2)
+        wing.rotation_euler = (0.4, side * 0.6, 0.8 * (-1 if side < 0 else 1))
+        apply_mat(wing, mat_horn)
+        attach_mesh_to_bone(wing, rig, "Chest")
+
+    bpy.ops.mesh.primitive_uv_sphere_add(radius=0.2, location=(0, 0, 1.85))
+    head = bpy.context.active_object
+    apply_mat(head, mat_skin)
+    attach_mesh_to_bone(head, rig, "Head")
+
+    for side in [-0.14, 0.14]:
+        bpy.ops.mesh.primitive_cone_add(radius1=0.05, depth=0.35, location=(side, -0.04, 2.05))
+        horn = bpy.context.active_object
+        horn.rotation_euler = (-0.4, side * 0.6, 0)
+        apply_mat(horn, mat_horn)
+        attach_mesh_to_bone(horn, rig, "Head")
+
+    for side in [-0.07, 0.07]:
+        bpy.ops.mesh.primitive_uv_sphere_add(radius=0.035, location=(side, -0.16, 1.88))
+        eye = bpy.context.active_object
+        apply_mat(eye, mat_obsidian)
+        attach_mesh_to_bone(eye, rig, "Head")
+
+    bpy.ops.mesh.primitive_cube_add(size=0.07, location=(-0.75, -0.25, 1.15))
+    blade = bpy.context.active_object
+    blade.scale = (0.15, 0.04, 4.5)
+    apply_mat(blade, mat_obsidian)
+    attach_mesh_to_bone(blade, rig, "Arm_R")
+
+    add_standard_animations(rig, weapon_side="R")
+
+    setup_lighting(key_pos=(2.2, -4.0, 3.0), key_color=(1.0, 0.85, 0.8), key_energy=110.0,
+                   rim_pos=(-2.5, 2.5, 2.5), rim_color=(0.9, 0.2, 0.1), rim_energy=100.0)
+    setup_camera(location=(0, -4.8, 1.45), rotation=(1.52, 0, 0))
+    export_and_render("enemy_imp")
+
+def build_knight():
+    print(">>> Building Enemy: Hollow Knight...")
+    clear_scene()
+    setup_render_settings(450, 600)
+
+    mat_dark_plate = create_mat("CursedPlate", (0.16, 0.15, 0.18), roughness=0.45, metallic=0.9)
+    mat_trim = create_mat("GoldRuinTrim", (0.6, 0.48, 0.25), roughness=0.5, metallic=0.85)
+    mat_glow = create_mat("GhostVisorGlow", (0.2, 0.7, 0.9), roughness=0.3,
+                          emission_color=(0.1, 0.6, 0.9), emission_strength=3.5)
+
+    rig = build_humanoid_rig("KnightRig")
+
+    bpy.ops.mesh.primitive_cube_add(size=0.48, location=(0, 0, 1.45))
+    cuirass = bpy.context.active_object
+    cuirass.scale = (0.85, 0.55, 1.0)
+    apply_mat(cuirass, mat_dark_plate)
+    attach_mesh_to_bone(cuirass, rig, "Chest")
+
+    for side, sign in [("L", 1), ("R", -1)]:
+        bpy.ops.mesh.primitive_cone_add(radius1=0.18, depth=0.3, location=(sign * 0.55, 0, 1.75))
+        pauldron = bpy.context.active_object
+        pauldron.rotation_euler = (0, sign * 0.4, 0)
+        apply_mat(pauldron, mat_trim)
+        attach_mesh_to_bone(pauldron, rig, "Chest")
+
+    bpy.ops.mesh.primitive_cylinder_add(radius=0.22, depth=0.4, location=(0, 0, 2.1))
+    helm = bpy.context.active_object
+    apply_mat(helm, mat_dark_plate)
+    attach_mesh_to_bone(helm, rig, "Head")
+
+    bpy.ops.mesh.primitive_cube_add(size=0.04, location=(0, -0.21, 2.12))
+    visor = bpy.context.active_object
+    visor.scale = (3.5, 0.2, 0.4)
+    apply_mat(visor, mat_glow)
+    attach_mesh_to_bone(visor, rig, "Head")
+
+    for side in [-0.15, 0.15]:
+        bpy.ops.mesh.primitive_cone_add(radius1=0.05, depth=0.35, location=(side, 0.05, 2.38))
+        crest = bpy.context.active_object
+        crest.rotation_euler = (0.2, side * 0.5, 0)
+        apply_mat(crest, mat_trim)
+        attach_mesh_to_bone(crest, rig, "Head")
+
+    bpy.ops.mesh.primitive_cube_add(size=0.09, location=(-0.75, -0.3, 1.35))
+    blade = bpy.context.active_object
+    blade.scale = (0.22, 0.05, 8.5)
+    apply_mat(blade, mat_dark_plate)
+    attach_mesh_to_bone(blade, rig, "Arm_R")
+
+    bpy.ops.mesh.primitive_cube_add(size=0.06, location=(-0.75, -0.3, 1.0))
+    guard = bpy.context.active_object
+    guard.scale = (2.8, 0.8, 0.8)
+    apply_mat(guard, mat_trim)
+    attach_mesh_to_bone(guard, rig, "Arm_R")
+
+    add_standard_animations(rig, weapon_side="R")
+
+    setup_lighting(key_pos=(2.2, -4.0, 3.0), key_color=(0.85, 0.88, 1.0), key_energy=120.0,
+                   rim_pos=(-2.5, 2.5, 2.5), rim_color=(0.2, 0.5, 0.8), rim_energy=100.0)
+    setup_camera(location=(0, -5.0, 1.6), rotation=(1.52, 0, 0))
+    export_and_render("enemy_knight")
+
+def build_gargoyle():
+    print(">>> Building Boss: Stone Gargoyle (Floor 10 Boss)...")
+    clear_scene()
+    setup_render_settings(450, 600)
+
+    mat_stone = create_mat("GargoyleStone", (0.28, 0.28, 0.3), roughness=0.9)
+    mat_moss = create_mat("GargoyleMoss", (0.18, 0.25, 0.16), roughness=0.95)
+    mat_eye = create_mat("GargoyleAmberEye", (1.0, 0.6, 0.1), roughness=0.3,
+                         emission_color=(1.0, 0.5, 0.0), emission_strength=3.5)
+
+    rig = build_humanoid_rig("GargoyleRig")
+
+    bpy.ops.mesh.primitive_cube_add(size=0.48, location=(0, 0, 1.45))
+    torso = bpy.context.active_object
+    torso.scale = (0.9, 0.65, 0.95)
+    apply_mat(torso, mat_stone)
+    attach_mesh_to_bone(torso, rig, "Chest")
+
+    for side in [-0.35, 0.35]:
+        bpy.ops.mesh.primitive_cube_add(size=0.1, location=(side, 0.3, 1.55))
+        wing = bpy.context.active_object
+        wing.scale = (2.2, 0.2, 4.0)
+        wing.rotation_euler = (0.3, side * 0.4, 0.5 * (-1 if side < 0 else 1))
+        apply_mat(wing, mat_stone)
+        attach_mesh_to_bone(wing, rig, "Chest")
+
+    bpy.ops.mesh.primitive_uv_sphere_add(radius=0.24, location=(0, 0, 2.05))
+    head = bpy.context.active_object
+    apply_mat(head, mat_moss)
+    attach_mesh_to_bone(head, rig, "Head")
+
+    for side in [-0.18, 0.18]:
+        bpy.ops.mesh.primitive_cone_add(radius1=0.07, depth=0.45, location=(side, -0.05, 2.32))
+        horn = bpy.context.active_object
+        horn.rotation_euler = (-0.5, side * 0.7, 0)
+        apply_mat(horn, mat_stone)
+        attach_mesh_to_bone(horn, rig, "Head")
+
+    for side in [-0.09, 0.09]:
+        bpy.ops.mesh.primitive_uv_sphere_add(radius=0.04, location=(side, -0.19, 2.08))
+        eye = bpy.context.active_object
+        apply_mat(eye, mat_eye)
+        attach_mesh_to_bone(eye, rig, "Head")
+
+    bpy.ops.mesh.primitive_cube_add(size=0.15, location=(-0.75, -0.25, 1.35))
+    hammer = bpy.context.active_object
+    hammer.scale = (0.7, 0.7, 4.5)
+    apply_mat(hammer, mat_stone)
+    attach_mesh_to_bone(hammer, rig, "Arm_R")
+
+    add_standard_animations(rig, weapon_side="R")
+
+    setup_lighting(key_pos=(2.2, -4.0, 3.0), key_color=(0.9, 0.9, 0.85), key_energy=120.0,
+                   rim_pos=(-2.5, 2.5, 2.5), rim_color=(0.8, 0.5, 0.1), rim_energy=100.0)
+    setup_camera(location=(0, -5.0, 1.6), rotation=(1.52, 0, 0))
+    export_and_render("gargoyle_boss")
+
+def build_amalgam():
+    print(">>> Building Boss: Flesh Amalgam (Floor 20 Boss)...")
+    clear_scene()
+    setup_render_settings(450, 600)
+
+    mat_flesh = create_mat("AmalgamFlesh", (0.35, 0.12, 0.15), roughness=0.6)
+    mat_bone = create_mat("ProtrudingBone", (0.8, 0.75, 0.7), roughness=0.8)
+    mat_cyst = create_mat("PulsingCyst", (0.85, 0.1, 0.1), roughness=0.4,
+                          emission_color=(0.8, 0.05, 0.05), emission_strength=3.0)
+
+    rig = build_humanoid_rig("AmalgamRig")
+
+    bpy.ops.mesh.primitive_uv_sphere_add(radius=0.48, location=(0, 0, 1.5))
+    torso = bpy.context.active_object
+    torso.scale = (1.2, 0.9, 1.1)
+    apply_mat(torso, mat_flesh)
+    attach_mesh_to_bone(torso, rig, "Chest")
+
+    for i in range(5):
+        bpy.ops.mesh.primitive_cone_add(radius1=0.08, depth=0.5, location=((i-2)*0.15, 0.35, 1.4 + (i%2)*0.2))
+        spike = bpy.context.active_object
+        spike.rotation_euler = (0.6, (i-2)*0.2, 0)
+        apply_mat(spike, mat_bone)
+        attach_mesh_to_bone(spike, rig, "Chest")
+
+    for side in [-0.22, 0.22]:
+        bpy.ops.mesh.primitive_uv_sphere_add(radius=0.22, location=(side, -0.05, 2.15))
+        head = bpy.context.active_object
+        apply_mat(head, mat_flesh)
+        attach_mesh_to_bone(head, rig, "Head")
+
+        bpy.ops.mesh.primitive_uv_sphere_add(radius=0.05, location=(side, -0.22, 2.18))
+        cyst = bpy.context.active_object
+        apply_mat(cyst, mat_cyst)
+        attach_mesh_to_bone(cyst, rig, "Head")
+
+    bpy.ops.mesh.primitive_cube_add(size=0.12, location=(-0.8, -0.3, 1.35))
+    cleaver = bpy.context.active_object
+    cleaver.scale = (0.28, 0.08, 9.0)
+    apply_mat(cleaver, mat_bone)
+    attach_mesh_to_bone(cleaver, rig, "Arm_R")
+
+    add_standard_animations(rig, weapon_side="R")
+
+    setup_lighting(key_pos=(2.2, -4.0, 3.0), key_color=(0.95, 0.8, 0.8), key_energy=130.0,
+                   rim_pos=(-2.5, 2.5, 2.5), rim_color=(0.9, 0.1, 0.1), rim_energy=120.0)
+    setup_camera(location=(0, -5.2, 1.65), rotation=(1.52, 0, 0))
+    export_and_render("boss_amalgam")
+
+# =============================================================================
 # 6. BOSS: VALTHOR THE SOUL EXTINGUISHER (Валтор - Босс 30 этажа)
 # =============================================================================
 def build_valthor():
@@ -925,6 +1230,11 @@ def main():
     build_thief()
     build_cleric()
     build_cultist()
+    build_skeleton()
+    build_imp()
+    build_knight()
+    build_gargoyle()
+    build_amalgam()
     build_valthor()
     build_chest()
     build_campfire()
@@ -932,7 +1242,7 @@ def main():
     build_corridor_pillar()
     build_elevator()
     print("==================================================================")
-    print("   ALL 11 3D MODELS AND SKELETAL RIGS GENERATED SUCCESSFULLY!    ")
+    print("   ALL 16 3D MODELS AND SKELETAL RIGS GENERATED SUCCESSFULLY!    ")
     print("==================================================================")
 
 if __name__ == "__main__":

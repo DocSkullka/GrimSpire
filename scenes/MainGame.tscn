@@ -218,20 +218,18 @@ text = "Описание врага"
 
 [node name="CampPanel" type="PanelContainer" parent="UI"]
 visible = false
-anchors_preset = 15
-anchor_right = 1.0
-anchor_bottom = 1.0
-offset_top = 66.0
-grow_horizontal = 2
-grow_vertical = 2
+offset_left = 32.0
+offset_top = 70.0
+offset_right = 482.0
+offset_bottom = 696.0
 
 [node name="CampDimmer" type="ColorRect" parent="UI/CampPanel"]
 layout_mode = 2
-color = Color(0.03, 0.02, 0.04, 0.75)
+color = Color(0.05, 0.04, 0.07, 0.88)
 
 [node name="VBox" type="VBoxContainer" parent="UI/CampPanel"]
 layout_mode = 2
-theme_override_constants/separation = 14
+theme_override_constants/separation = 10
 
 [node name="Header" type="VBoxContainer" parent="UI/CampPanel/VBox"]
 layout_mode = 2
@@ -240,41 +238,41 @@ theme_override_constants/separation = 4
 [node name="Title" type="Label" parent="UI/CampPanel/VBox/Header"]
 layout_mode = 2
 theme_override_colors/font_color = Color(0.95, 0.25, 0.3, 1)
-theme_override_font_sizes/font_size = 28
-text = "КРОВАВЫЙ АЛТАРЬ (ЛАГЕРЬ)"
+theme_override_font_sizes/font_size = 20
+text = "КРОВАВЫЙ АЛТАРЬ"
 horizontal_alignment = 1
 
 [node name="Subtitle" type="Label" parent="UI/CampPanel/VBox/Header"]
 layout_mode = 2
 theme_override_colors/font_color = Color(0.75, 0.75, 0.8, 1)
-theme_override_font_sizes/font_size = 14
-text = "Освятите золото павших походов, чтобы навеки усилить свою душу."
+theme_override_font_sizes/font_size = 12
+text = "Лагерь у подножия Шпиля"
 horizontal_alignment = 1
 
 [node name="AltarGoldLabel" type="Label" parent="UI/CampPanel/VBox/Header"]
 layout_mode = 2
 theme_override_colors/font_color = Color(1, 0.85, 0.3, 1)
-theme_override_font_sizes/font_size = 18
-text = "Золото: 0 зол.   |   Рекорд восхождения: Этаж 1"
+theme_override_font_sizes/font_size = 14
+text = "Золото: 0 зол."
 horizontal_alignment = 1
 
 [node name="ScrollContainer" type="ScrollContainer" parent="UI/CampPanel/VBox"]
-custom_minimum_size = Vector2(720, 360)
+custom_minimum_size = Vector2(420, 320)
 layout_mode = 2
-size_flags_horizontal = 4
+size_flags_horizontal = 3
 size_flags_vertical = 3
 
 [node name="UpgradesVBox" type="VBoxContainer" parent="UI/CampPanel/VBox/ScrollContainer"]
 layout_mode = 2
 size_flags_horizontal = 3
-theme_override_constants/separation = 10
+theme_override_constants/separation = 8
 
 [node name="BtnAscend" type="Button" parent="UI/CampPanel/VBox"]
-custom_minimum_size = Vector2(380, 56)
+custom_minimum_size = Vector2(410, 52)
 layout_mode = 2
 size_flags_horizontal = 4
 theme_override_colors/font_color = Color(1, 0.9, 0.8, 1)
-theme_override_font_sizes/font_size = 20
+theme_override_font_sizes/font_size = 18
 text = "⚔ ВОСХОЖДЕНИЕ В ШПИЛЬ"
 
 [node name="DraftModal" type="Control" parent="UI"]
@@ -294,7 +292,7 @@ anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 mouse_filter = 0
-color = Color(0.02, 0.02, 0.03, 0.96)
+color = Color(0.02, 0.02, 0.03, 0.72)
 
 [node name="VBox" type="VBoxContainer" parent="UI/DraftModal"]
 layout_mode = 1

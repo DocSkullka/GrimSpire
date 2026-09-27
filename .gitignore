@@ -19,6 +19,8 @@ obj/
 *.translation
 export/
 export_presets.cfg
+*.blend
+*.blend.import
 
 ## Unity (if utilized)
 [Ll]ibrary/
