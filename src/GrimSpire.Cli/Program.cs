@@ -37,7 +37,13 @@ public static class Program
             Console.WriteLine(" [0] Exit");
             Console.Write("\nChoose an action: ");
 
-            string? choice = Console.ReadLine()?.Trim();
+            string? line = Console.ReadLine();
+            if (line == null)
+            {
+                exit = true;
+                break;
+            }
+            string choice = line.Trim();
             switch (choice)
             {
                 case "1":
@@ -128,8 +134,13 @@ public static class Program
                 while (chosenIndex < 0 || chosenIndex >= draft.Count)
                 {
                     Console.Write("Equip item (1, 2, or 3): ");
-                    var input = Console.ReadLine()?.Trim();
-                    if (int.TryParse(input, out int parsed) && parsed >= 1 && parsed <= 3)
+                    var input = Console.ReadLine();
+                    if (input == null)
+                    {
+                        chosenIndex = 0;
+                        break;
+                    }
+                    if (int.TryParse(input.Trim(), out int parsed) && parsed >= 1 && parsed <= draft.Count)
                     {
                         chosenIndex = parsed - 1;
                     }
