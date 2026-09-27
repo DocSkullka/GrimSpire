@@ -79,6 +79,9 @@ var enemy_base_pos: Vector2
 var tex_spire_interior: Texture2D
 var tex_camp_altar: Texture2D
 var tex_player_wanderer: Texture2D
+var tex_enemy_skeleton: Texture2D
+var tex_enemy_imp: Texture2D
+var tex_enemy_knight: Texture2D
 var tex_enemy_ghoul: Texture2D
 var tex_enemy_cultist: Texture2D
 var tex_boss_malgorath: Texture2D
@@ -114,8 +117,11 @@ func _load_textures():
 	tex_spire_interior = _safe_load_tex("res://assets/textures/spire_interior.png")
 	tex_camp_altar = _safe_load_tex("res://assets/textures/camp_altar.png")
 	tex_player_wanderer = _safe_load_tex("res://assets/textures/player_wanderer.png")
-	tex_enemy_ghoul = _safe_load_tex("res://assets/textures/enemy_ghoul.png")
-	tex_enemy_cultist = _safe_load_tex("res://assets/textures/enemy_cultist.png")
+	tex_enemy_skeleton = _safe_load_tex("res://assets/textures/enemy_skeleton.png")
+	tex_enemy_imp = _safe_load_tex("res://assets/textures/enemy_imp.png")
+	tex_enemy_knight = _safe_load_tex("res://assets/textures/enemy_knight.png")
+	tex_enemy_ghoul = _safe_load_tex("res://assets/textures/enemy_skeleton.png") # Fallback to skeleton
+	tex_enemy_cultist = _safe_load_tex("res://assets/textures/enemy_knight.png")
 	tex_boss_malgorath = _safe_load_tex("res://assets/textures/boss_malgorath.png")
 	tex_boss_amalgam = _safe_load_tex("res://assets/textures/boss_amalgam.png")
 	tex_slash = _safe_load_tex("res://assets/ui/slash_effect.png")
@@ -132,10 +138,10 @@ func _load_textures():
 	bg_texture.texture = tex_camp_altar
 
 func _process(delta: float):
-	# Idle breathing animations for units
+	# Idle breathing animations anchored around -180.0
 	var time = Time.get_ticks_msec() / 1000.0
-	player_sprite.position.y = sin(time * 2.5) * 6.0
-	enemy_sprite.position.y = cos(time * 2.8) * 7.0
+	player_sprite.position.y = -180.0 + sin(time * 2.5) * 6.0
+	enemy_sprite.position.y = -180.0 + cos(time * 2.8) * 7.0
 	
 	if state == GameState.BATTLE:
 		_process_battle_loop(delta)
@@ -237,6 +243,11 @@ func _start_floor_battle():
 	$UI/BattleHUD.visible = true
 	$Arena.visible = true
 	
+	player_anchor.position = player_base_pos
+	enemy_anchor.position = enemy_base_pos
+	player_sprite.modulate = Color(1, 1, 1, 1)
+	enemy_sprite.modulate = Color(1, 1, 1, 1)
+	
 	enemy_data = game_data.get_enemy_for_floor(current_floor)
 	_setup_enemy_visuals()
 	
@@ -266,15 +277,22 @@ func _setup_enemy_visuals():
 	if is_boss:
 		if current_floor >= 20:
 			enemy_sprite.texture = tex_boss_amalgam
+			enemy_sprite.scale = Vector2(0.95, 0.95)
 		else:
 			enemy_sprite.texture = tex_boss_malgorath
-		enemy_sprite.scale = Vector2(0.95, 0.95)
+			enemy_sprite.scale = Vector2(1.0, 1.0)
+	elif enemy_id == "feeble_skeleton" or current_floor == 1:
+		enemy_sprite.texture = tex_enemy_skeleton
+		enemy_sprite.scale = Vector2(0.85, 0.85)
+	elif enemy_id == "spire_imp" or current_floor <= 4:
+		enemy_sprite.texture = tex_enemy_imp
+		enemy_sprite.scale = Vector2(0.8, 0.8)
 	elif enemy_id == "hollow_knight" or current_floor >= 5:
-		enemy_sprite.texture = tex_enemy_cultist
-		enemy_sprite.scale = Vector2(0.75, 0.75)
+		enemy_sprite.texture = tex_enemy_knight
+		enemy_sprite.scale = Vector2(0.85, 0.85)
 	else:
-		enemy_sprite.texture = tex_enemy_ghoul
-		enemy_sprite.scale = Vector2(0.75, 0.75)
+		enemy_sprite.texture = tex_enemy_skeleton
+		enemy_sprite.scale = Vector2(0.85, 0.85)
 	
 	enemy_sprite.modulate = Color(1, 1, 1, 1)
 
@@ -491,10 +509,17 @@ func _on_item_drafted(item: Dictionary):
 	var slot = item.get("slot", "Weapon")
 	equipped_items[slot] = item
 	
-	_calculate_player_stats()
-	_log("[color=#60b0ff]Equipped: %s in %s slot.[/color]" % [item.get("name", ""), slot])
-	
 	current_floor += 1
+	_calculate_player_stats()
+	
+	# Moderate heal between floors (25% max HP) matching design spec
+	var max_hp = player_stats.get("max_health", 100)
+	var heal_amt = int(round(max_hp * 0.25))
+	player_stats["current_health"] = min(max_hp, player_stats.get("current_health", max_hp) + heal_amt)
+	
+	_log("[color=#60b0ff]Equipped: %s in %s slot.[/color]" % [item.get("name", ""), slot])
+	_log("[color=#40ff70]Ascension boon: Restored +%d HP for the climb ahead.[/color]" % heal_amt)
+	
 	_start_floor_battle()
 
 # ==============================================================================
@@ -514,6 +539,9 @@ Gold Preserved: %d G.""" % [current_floor, max_floor, gold]
 
 func _on_return_altar_pressed():
 	sound_manager.play_click()
+	current_floor = 1
+	equipped_items.clear()
+	_calculate_player_stats()
 	_enter_camp_state()
 
 # ==============================================================================
@@ -613,7 +641,7 @@ func _refresh_equipped_icons():
 # ==============================================================================
 
 func _shake_node(node: Node2D, intensity: float):
-	var orig = node.position
+	var orig = player_base_pos if node == player_anchor else (enemy_base_pos if node == enemy_anchor else node.position)
 	var tw = create_tween()
 	for i in range(4):
 		var offset = Vector2(randf_range(-intensity, intensity), randf_range(-intensity, intensity))
