@@ -137,6 +137,12 @@ var tex_enemy_ghoul: Texture2D
 var tex_enemy_cultist: Texture2D
 var tex_enemy_shade: Texture2D
 var tex_enemy_executioner: Texture2D
+var tex_enemy_inquisitor: Texture2D
+var tex_enemy_crypt_lich: Texture2D
+var tex_enemy_infernal_colossus: Texture2D
+var tex_enemy_obsidian_gargoyle: Texture2D
+var tex_enemy_plague_abomination: Texture2D
+var tex_enemy_void_stalker: Texture2D
 var tex_boss_malgorath: Texture2D
 var tex_boss_amalgam: Texture2D
 var tex_boss_valthor: Texture2D
@@ -219,6 +225,8 @@ func _ready():
 	
 	_calculate_player_stats()
 	_enter_camp_state()
+	if main_menu_modal != null:
+		main_menu_modal.visible = true
 
 func _unhandled_input(event: InputEvent):
 	if event is InputEventKey and event.pressed and not event.echo:
@@ -241,6 +249,12 @@ func _load_textures():
 	tex_enemy_cultist = _safe_load_tex("res://assets/textures/enemy_cultist.png")
 	tex_enemy_shade = _safe_load_tex("res://assets/textures/enemy_shade.png")
 	tex_enemy_executioner = _safe_load_tex("res://assets/textures/enemy_executioner.png")
+	tex_enemy_inquisitor = _safe_load_tex("res://assets/textures/enemy_inquisitor.png")
+	tex_enemy_crypt_lich = _safe_load_tex("res://assets/textures/enemy_crypt_lich.png")
+	tex_enemy_infernal_colossus = _safe_load_tex("res://assets/textures/enemy_infernal_colossus.png")
+	tex_enemy_obsidian_gargoyle = _safe_load_tex("res://assets/textures/enemy_obsidian_gargoyle.png")
+	tex_enemy_plague_abomination = _safe_load_tex("res://assets/textures/enemy_plague_abomination.png")
+	tex_enemy_void_stalker = _safe_load_tex("res://assets/textures/enemy_void_stalker.png")
 	tex_boss_malgorath = _safe_load_tex("res://assets/textures/boss_malgorath.png")
 	tex_boss_amalgam = _safe_load_tex("res://assets/textures/boss_amalgam.png")
 	tex_boss_valthor = _safe_load_tex("res://assets/textures/boss_valthor.png")
@@ -255,16 +269,20 @@ func _load_textures():
 	tex_gear_weapons["scythe"] = _safe_load_tex("res://assets/gear/weapon_scythe.png")
 	tex_gear_weapons["greatsword"] = _safe_load_tex("res://assets/gear/weapon_greatsword.png")
 	tex_gear_weapons["dagger"] = _safe_load_tex("res://assets/gear/weapon_dagger.png")
+	tex_gear_weapons["mace"] = _safe_load_tex("res://assets/gear/weapon_mace.png")
 	
 	tex_gear_helms["sallet"] = _safe_load_tex("res://assets/gear/helm_sallet.png")
 	tex_gear_helms["crown_thorns"] = _safe_load_tex("res://assets/gear/helm_crown_thorns.png")
 	tex_gear_helms["hood"] = _safe_load_tex("res://assets/gear/helm_hood.png")
+	tex_gear_helms["inquisitor"] = _safe_load_tex("res://assets/gear/helm_inquisitor.png")
 	
 	tex_gear_armors["carapace"] = _safe_load_tex("res://assets/gear/armor_carapace.png")
 	tex_gear_armors["cuirass"] = _safe_load_tex("res://assets/gear/armor_cuirass.png")
+	tex_gear_armors["robes"] = _safe_load_tex("res://assets/gear/armor_robes.png")
 	
 	tex_gear_offhands["weeping"] = _safe_load_tex("res://assets/gear/offhand_weeping.png")
 	tex_gear_offhands["grimoire"] = _safe_load_tex("res://assets/gear/offhand_grimoire.png")
+	tex_gear_offhands["buckler"] = _safe_load_tex("res://assets/gear/offhand_buckler.png")
 	
 	# Slot Icons
 	item_icons["Weapon"] = _safe_load_tex("res://assets/icons/icon_weapon.png")
@@ -835,7 +853,13 @@ func _get_enemy_texture_for_id(e_id: String) -> Texture2D:
 		"tormented_shade": return tex_enemy_shade if tex_enemy_shade else tex_enemy_skeleton
 		"hollow_knight": return tex_enemy_knight
 		"blood_cultist": return tex_enemy_cultist if tex_enemy_cultist else tex_enemy_knight
+		"obsidian_gargoyle": return tex_enemy_obsidian_gargoyle if tex_enemy_obsidian_gargoyle else tex_enemy_knight
+		"plague_abomination": return tex_enemy_plague_abomination if tex_enemy_plague_abomination else tex_enemy_ghoul
+		"cursed_inquisitor": return tex_enemy_inquisitor if tex_enemy_inquisitor else tex_enemy_cultist
 		"spire_executioner": return tex_enemy_executioner if tex_enemy_executioner else tex_enemy_knight
+		"crypt_lich": return tex_enemy_crypt_lich if tex_enemy_crypt_lich else tex_enemy_shade
+		"void_stalker": return tex_enemy_void_stalker if tex_enemy_void_stalker else tex_enemy_shade
+		"infernal_colossus": return tex_enemy_infernal_colossus if tex_enemy_infernal_colossus else tex_enemy_knight
 		"boss_gargoyle": return tex_boss_malgorath
 		"boss_flesh_amalgam": return tex_boss_amalgam
 		"boss_valthor": return tex_boss_valthor if tex_boss_valthor else tex_boss_malgorath
@@ -1317,12 +1341,30 @@ func _setup_enemy_visuals():
 	elif enemy_id == "hollow_knight" or current_floor == 5:
 		enemy_sprite.texture = tex_enemy_knight
 		enemy_sprite.scale = Vector2(0.85, 0.85)
-	elif enemy_id == "blood_cultist":
+	elif enemy_id == "blood_cultist" or current_floor == 6:
 		enemy_sprite.texture = tex_enemy_cultist if tex_enemy_cultist else tex_enemy_knight
 		enemy_sprite.scale = Vector2(0.85, 0.85)
-	elif enemy_id == "spire_executioner":
+	elif enemy_id == "obsidian_gargoyle" or current_floor == 8:
+		enemy_sprite.texture = tex_enemy_obsidian_gargoyle if tex_enemy_obsidian_gargoyle else tex_enemy_knight
+		enemy_sprite.scale = Vector2(0.9, 0.9)
+	elif enemy_id == "plague_abomination" or current_floor == 9:
+		enemy_sprite.texture = tex_enemy_plague_abomination if tex_enemy_plague_abomination else tex_enemy_ghoul
+		enemy_sprite.scale = Vector2(0.95, 0.95)
+	elif enemy_id == "cursed_inquisitor" or current_floor in [11, 12, 13]:
+		enemy_sprite.texture = tex_enemy_inquisitor if tex_enemy_inquisitor else tex_enemy_cultist
+		enemy_sprite.scale = Vector2(0.85, 0.85)
+	elif enemy_id == "spire_executioner" or current_floor in [14, 15, 16]:
 		enemy_sprite.texture = tex_enemy_executioner if tex_enemy_executioner else tex_enemy_knight
 		enemy_sprite.scale = Vector2(0.9, 0.9)
+	elif enemy_id == "crypt_lich" or current_floor in [17, 18, 19]:
+		enemy_sprite.texture = tex_enemy_crypt_lich if tex_enemy_crypt_lich else tex_enemy_shade
+		enemy_sprite.scale = Vector2(0.88, 0.88)
+	elif enemy_id == "void_stalker" or (current_floor >= 21 and current_floor <= 25):
+		enemy_sprite.texture = tex_enemy_void_stalker if tex_enemy_void_stalker else tex_enemy_shade
+		enemy_sprite.scale = Vector2(0.85, 0.85)
+	elif enemy_id == "infernal_colossus" or (current_floor >= 26 and current_floor <= 29):
+		enemy_sprite.texture = tex_enemy_infernal_colossus if tex_enemy_infernal_colossus else tex_enemy_knight
+		enemy_sprite.scale = Vector2(1.0, 1.0)
 	else:
 		enemy_sprite.texture = tex_enemy_knight
 		enemy_sprite.scale = Vector2(0.85, 0.85)
@@ -1337,7 +1379,9 @@ func _update_player_visuals():
 		var w_id = w.get("id", "")
 		if "scythe" in w_id:
 			weapon_sprite.texture = tex_gear_weapons.get("scythe")
-		elif "axe" in w_id or "mace" in w_id:
+		elif "mace" in w_id:
+			weapon_sprite.texture = tex_gear_weapons.get("mace")
+		elif "axe" in w_id:
 			weapon_sprite.texture = tex_gear_weapons.get("axe")
 		elif "greatsword" in w_id or "eater" in w_id:
 			weapon_sprite.texture = tex_gear_weapons.get("greatsword")
@@ -1345,7 +1389,19 @@ func _update_player_visuals():
 			weapon_sprite.texture = tex_gear_weapons.get("dagger")
 		else:
 			weapon_sprite.texture = tex_gear_weapons.get("cleaver")
-		weapon_sprite.modulate = Color(1, 1, 1, 1)
+		
+		# Glow / enchant effect based on item rarity
+		var rarity = w.get("rarity", "Common")
+		if rarity == "Cursed":
+			weapon_sprite.modulate = Color(1.8, 0.35, 0.45, 1.0)
+		elif rarity in ["Mythic", "Legendary"]:
+			weapon_sprite.modulate = Color(1.5, 1.35, 0.45, 1.0)
+		elif rarity == "Epic":
+			weapon_sprite.modulate = Color(1.4, 0.6, 1.7, 1.0)
+		elif rarity == "Rare":
+			weapon_sprite.modulate = Color(0.6, 1.2, 1.8, 1.0)
+		else:
+			weapon_sprite.modulate = Color(1.0, 1.0, 1.0, 1.0)
 	else:
 		weapon_sprite.visible = false
 	
@@ -1356,6 +1412,8 @@ func _update_player_visuals():
 		var h_id = h.get("id", "")
 		if "thorns" in h_id or "king" in h_id:
 			helm_overlay.texture = tex_gear_helms.get("crown_thorns")
+		elif "inquisitor" in h_id or "mitre" in h_id:
+			helm_overlay.texture = tex_gear_helms.get("inquisitor")
 		elif "hood" in h_id or "cowl" in h_id:
 			helm_overlay.texture = tex_gear_helms.get("hood")
 		else:
@@ -1371,6 +1429,8 @@ func _update_player_visuals():
 		var a_id = a.get("id", "")
 		if "carapace" in a_id or "shroud" in a_id:
 			armor_overlay.texture = tex_gear_armors.get("carapace")
+		elif "robes" in a_id or "vestment" in a_id:
+			armor_overlay.texture = tex_gear_armors.get("robes")
 		else:
 			armor_overlay.texture = tex_gear_armors.get("cuirass")
 		armor_overlay.modulate = Color(1, 1, 1, 1)
@@ -1384,15 +1444,29 @@ func _update_player_visuals():
 		var o_id = o.get("id", "")
 		if "grimoire" in o_id or "totem" in o_id:
 			offhand_sprite.texture = tex_gear_offhands.get("grimoire")
+		elif "buckler" in o_id or "shield" in o_id:
+			offhand_sprite.texture = tex_gear_offhands.get("buckler")
 		else:
 			offhand_sprite.texture = tex_gear_offhands.get("weeping")
 		offhand_sprite.modulate = Color(1, 1, 1, 1)
 	else:
 		offhand_sprite.visible = false
 	
-	# 5. Accessory
+	# 5. Accessory Aura & Enchant
 	var acc = equipped_items.get("Accessory", null)
 	accessory_aura.visible = (acc != null)
+	if acc != null:
+		var acc_r = acc.get("rarity", "Common")
+		var mote_color = Color(1.0, 0.4, 0.5, 0.9)
+		if acc_r == "Cursed":
+			mote_color = Color(1.0, 0.15, 0.25, 0.95)
+		elif acc_r in ["Legendary", "Mythic"]:
+			mote_color = Color(1.0, 0.88, 0.2, 0.95)
+		elif acc_r == "Epic":
+			mote_color = Color(0.85, 0.35, 1.0, 0.95)
+		for child in accessory_aura.get_children():
+			if child is Polygon2D:
+				child.color = mote_color
 
 # ==============================================================================
 # COMBAT EXECUTION
