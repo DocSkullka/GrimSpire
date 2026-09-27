@@ -1,10 +1,11 @@
-[gd_scene load_steps=6 format=3 uid="uid://c6xkvy3f1abqp"]
+[gd_scene load_steps=7 format=3 uid="uid://c6xkvy3f1abqp"]
 
 [ext_resource type="Script" path="res://scripts/GameController.gd" id="1_ctrl"]
 [ext_resource type="Script" path="res://scripts/SoundManager.gd" id="2_snd"]
 [ext_resource type="Script" path="res://scripts/GameData.gd" id="3_data"]
 [ext_resource type="Script" path="res://scripts/SaveManager.gd" id="4_save"]
 [ext_resource type="Shader" path="res://shaders/dark_gothic_vignette.gdshader" id="5_vignette"]
+[ext_resource type="Script" path="res://scripts/Localization.gd" id="6_loc"]
 
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_post"]
 shader = ExtResource("5_vignette")
@@ -26,6 +27,9 @@ script = ExtResource("3_data")
 [node name="SaveManager" type="Node" parent="."]
 script = ExtResource("4_save")
 
+[node name="Localization" type="Node" parent="."]
+script = ExtResource("6_loc")
+
 [node name="BackgroundLayer" type="CanvasLayer" parent="."]
 layer = -10
 
@@ -36,10 +40,10 @@ expand_mode = 1
 stretch_mode = 6
 
 [node name="GroundShadow" type="ColorRect" parent="BackgroundLayer"]
-offset_top = 460.0
+offset_top = 450.0
 offset_right = 1280.0
 offset_bottom = 720.0
-color = Color(0.04, 0.03, 0.05, 0.65)
+color = Color(0.03, 0.02, 0.04, 0.72)
 
 [node name="Arena" type="Node2D" parent="."]
 
@@ -62,49 +66,6 @@ scale = Vector2(0.75, 0.75)
 [node name="UI" type="CanvasLayer" parent="."]
 layer = 5
 
-[node name="TopHUD" type="Control" parent="UI"]
-layout_mode = 3
-anchors_preset = 10
-anchor_right = 1.0
-offset_bottom = 70.0
-grow_horizontal = 2
-
-[node name="FloorBanner" type="Label" parent="UI/TopHUD"]
-layout_mode = 1
-anchors_preset = 10
-anchor_right = 1.0
-offset_top = 16.0
-offset_bottom = 50.0
-grow_horizontal = 2
-theme_override_colors/font_color = Color(0.9, 0.85, 0.75, 1)
-theme_override_font_sizes/font_size = 22
-text = "FLOOR 1: ASCENDING GAUNTLET"
-horizontal_alignment = 1
-
-[node name="GoldDisplay" type="HBoxContainer" parent="UI/TopHUD"]
-layout_mode = 1
-anchors_preset = 1
-anchor_left = 1.0
-anchor_right = 1.0
-offset_left = -180.0
-offset_top = 16.0
-offset_right = -30.0
-offset_bottom = 52.0
-grow_horizontal = 0
-alignment = 2
-
-[node name="GoldIcon" type="TextureRect" parent="UI/TopHUD/GoldDisplay"]
-custom_minimum_size = Vector2(32, 32)
-layout_mode = 2
-expand_mode = 1
-stretch_mode = 5
-
-[node name="GoldLabel" type="Label" parent="UI/TopHUD/GoldDisplay"]
-layout_mode = 2
-theme_override_colors/font_color = Color(1, 0.85, 0.25, 1)
-theme_override_font_sizes/font_size = 20
-text = "0 G"
-
 [node name="BattleHUD" type="Control" parent="UI"]
 layout_mode = 3
 anchors_preset = 15
@@ -116,11 +77,10 @@ mouse_filter = 2
 
 [node name="PlayerHPBar" type="ProgressBar" parent="UI/BattleHUD"]
 layout_mode = 0
-offset_left = 140.0
-offset_top = 480.0
-offset_right = 480.0
-offset_bottom = 508.0
-theme_override_font_sizes/font_size = 12
+offset_left = 40.0
+offset_top = 490.0
+offset_right = 360.0
+offset_bottom = 516.0
 value = 100.0
 show_percentage = false
 
@@ -132,7 +92,7 @@ anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 theme_override_font_sizes/font_size = 12
-text = "100 / 100 HP"
+text = "100 / 100 ОЗ"
 horizontal_alignment = 1
 vertical_alignment = 1
 
@@ -144,16 +104,63 @@ offset_top = -24.0
 offset_bottom = -2.0
 grow_horizontal = 2
 theme_override_colors/font_color = Color(0.7, 0.85, 1, 1)
-theme_override_font_sizes/font_size = 14
-text = "Cursed Wanderer"
+theme_override_font_sizes/font_size = 15
+text = "Проклятый Странник (Вы)"
+
+[node name="EquippedGearBar" type="HBoxContainer" parent="UI/BattleHUD"]
+layout_mode = 0
+offset_left = 40.0
+offset_top = 526.0
+offset_right = 360.0
+offset_bottom = 578.0
+theme_override_constants/separation = 12
+
+[node name="PlayerStatsPanel" type="PanelContainer" parent="UI/BattleHUD"]
+layout_mode = 0
+offset_left = 40.0
+offset_top = 588.0
+offset_right = 360.0
+offset_bottom = 696.0
+
+[node name="PlayerStatsLabel" type="Label" parent="UI/BattleHUD/PlayerStatsPanel"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.85, 0.85, 0.9, 1)
+theme_override_font_sizes/font_size = 11
+text = "Статистика героя"
+vertical_alignment = 1
+
+[node name="CombatLogPanel" type="PanelContainer" parent="UI/BattleHUD"]
+layout_mode = 0
+offset_left = 390.0
+offset_top = 466.0
+offset_right = 890.0
+offset_bottom = 696.0
+
+[node name="LogVBox" type="VBoxContainer" parent="UI/BattleHUD/CombatLogPanel"]
+layout_mode = 2
+theme_override_constants/separation = 4
+
+[node name="LogHeader" type="Label" parent="UI/BattleHUD/CombatLogPanel/LogVBox"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.85, 0.75, 0.55, 1)
+theme_override_font_sizes/font_size = 12
+text = "ЖУРНАЛ СРАЖЕНИЯ"
+horizontal_alignment = 1
+
+[node name="CombatLog" type="RichTextLabel" parent="UI/BattleHUD/CombatLogPanel/LogVBox"]
+layout_mode = 2
+size_flags_vertical = 3
+theme_override_font_sizes/normal_font_size = 12
+theme_override_font_sizes/bold_font_size = 12
+bbcode_enabled = true
+scroll_following = true
 
 [node name="EnemyHPBar" type="ProgressBar" parent="UI/BattleHUD"]
 layout_mode = 0
-offset_left = 800.0
-offset_top = 480.0
-offset_right = 1140.0
-offset_bottom = 508.0
-theme_override_font_sizes/font_size = 12
+offset_left = 920.0
+offset_top = 490.0
+offset_right = 1240.0
+offset_bottom = 516.0
 value = 100.0
 show_percentage = false
 
@@ -165,7 +172,7 @@ anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 theme_override_font_sizes/font_size = 12
-text = "40 / 40 HP"
+text = "40 / 40 ОЗ"
 horizontal_alignment = 1
 vertical_alignment = 1
 
@@ -177,43 +184,54 @@ offset_top = -24.0
 offset_bottom = -2.0
 grow_horizontal = 2
 theme_override_colors/font_color = Color(1, 0.4, 0.4, 1)
-theme_override_font_sizes/font_size = 14
-text = "Feeble Skeleton"
+theme_override_font_sizes/font_size = 15
+text = "Враг"
 horizontal_alignment = 2
 
-[node name="EquippedGearBar" type="HBoxContainer" parent="UI/BattleHUD"]
+[node name="EnemyStatsPanel" type="PanelContainer" parent="UI/BattleHUD"]
 layout_mode = 0
-offset_left = 140.0
-offset_top = 525.0
-offset_right = 480.0
-offset_bottom = 575.0
-theme_override_constants/separation = 12
+offset_left = 920.0
+offset_top = 526.0
+offset_right = 1240.0
+offset_bottom = 578.0
 
-[node name="CombatLogPanel" type="PanelContainer" parent="UI/BattleHUD"]
-layout_mode = 0
-offset_left = 340.0
-offset_top = 535.0
-offset_right = 940.0
-offset_bottom = 695.0
-
-[node name="CombatLog" type="RichTextLabel" parent="UI/BattleHUD/CombatLogPanel"]
+[node name="EnemyStatsLabel" type="Label" parent="UI/BattleHUD/EnemyStatsPanel"]
 layout_mode = 2
-theme_override_font_sizes/normal_font_size = 13
-theme_override_font_sizes/bold_font_size = 13
-bbcode_enabled = true
-scroll_following = true
+theme_override_colors/font_color = Color(0.9, 0.8, 0.7, 1)
+theme_override_font_sizes/font_size = 11
+text = "Параметры врага"
+vertical_alignment = 1
+
+[node name="EnemyDescPanel" type="PanelContainer" parent="UI/BattleHUD"]
+layout_mode = 0
+offset_left = 920.0
+offset_top = 588.0
+offset_right = 1240.0
+offset_bottom = 696.0
+
+[node name="EnemyDescLabel" type="Label" parent="UI/BattleHUD/EnemyDescPanel"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.7, 0.7, 0.75, 1)
+theme_override_font_sizes/font_size = 11
+autowrap_mode = 2
+text = "Описание врага"
 
 [node name="CampPanel" type="PanelContainer" parent="UI"]
 visible = false
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
+offset_top = 66.0
 grow_horizontal = 2
 grow_vertical = 2
 
+[node name="CampDimmer" type="ColorRect" parent="UI/CampPanel"]
+layout_mode = 2
+color = Color(0.03, 0.02, 0.04, 0.75)
+
 [node name="VBox" type="VBoxContainer" parent="UI/CampPanel"]
 layout_mode = 2
-theme_override_constants/separation = 15
+theme_override_constants/separation = 14
 
 [node name="Header" type="VBoxContainer" parent="UI/CampPanel/VBox"]
 layout_mode = 2
@@ -223,25 +241,25 @@ theme_override_constants/separation = 4
 layout_mode = 2
 theme_override_colors/font_color = Color(0.95, 0.25, 0.3, 1)
 theme_override_font_sizes/font_size = 28
-text = "THE BLOOD ALTAR (BASE CAMP)"
+text = "КРОВАВЫЙ АЛТАРЬ (ЛАГЕРЬ)"
 horizontal_alignment = 1
 
 [node name="Subtitle" type="Label" parent="UI/CampPanel/VBox/Header"]
 layout_mode = 2
-theme_override_colors/font_color = Color(0.7, 0.7, 0.75, 1)
+theme_override_colors/font_color = Color(0.75, 0.75, 0.8, 1)
 theme_override_font_sizes/font_size = 14
-text = "Consecrate the gold of fallen climbs to permanently strengthen your soul."
+text = "Освятите золото павших походов, чтобы навеки усилить свою душу."
 horizontal_alignment = 1
 
 [node name="AltarGoldLabel" type="Label" parent="UI/CampPanel/VBox/Header"]
 layout_mode = 2
 theme_override_colors/font_color = Color(1, 0.85, 0.3, 1)
 theme_override_font_sizes/font_size = 18
-text = "Gold: 0 G   |   Deepest Descent: Floor 1"
+text = "Золото: 0 зол.   |   Рекорд восхождения: Этаж 1"
 horizontal_alignment = 1
 
 [node name="ScrollContainer" type="ScrollContainer" parent="UI/CampPanel/VBox"]
-custom_minimum_size = Vector2(650, 380)
+custom_minimum_size = Vector2(720, 360)
 layout_mode = 2
 size_flags_horizontal = 4
 size_flags_vertical = 3
@@ -252,92 +270,372 @@ size_flags_horizontal = 3
 theme_override_constants/separation = 10
 
 [node name="BtnAscend" type="Button" parent="UI/CampPanel/VBox"]
-custom_minimum_size = Vector2(360, 56)
+custom_minimum_size = Vector2(380, 56)
 layout_mode = 2
 size_flags_horizontal = 4
 theme_override_colors/font_color = Color(1, 0.9, 0.8, 1)
 theme_override_font_sizes/font_size = 20
-text = "ASCEND THE CURSED SPIRE"
+text = "⚔ ВОСХОЖДЕНИЕ В ШПИЛЬ"
 
-[node name="DraftModal" type="PanelContainer" parent="UI"]
+[node name="DraftModal" type="Control" parent="UI"]
 visible = false
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="DimmerBackdrop" type="ColorRect" parent="UI/DraftModal"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 0
+color = Color(0.02, 0.02, 0.03, 0.96)
+
+[node name="VBox" type="VBoxContainer" parent="UI/DraftModal"]
+layout_mode = 1
 anchors_preset = 8
 anchor_left = 0.5
 anchor_top = 0.5
 anchor_right = 0.5
 anchor_bottom = 0.5
-offset_left = -460.0
-offset_top = -250.0
-offset_right = 460.0
-offset_bottom = 250.0
+offset_left = -560.0
+offset_top = -285.0
+offset_right = 560.0
+offset_bottom = 345.0
 grow_horizontal = 2
 grow_vertical = 2
-
-[node name="VBox" type="VBoxContainer" parent="UI/DraftModal"]
-layout_mode = 2
-theme_override_constants/separation = 15
+theme_override_constants/separation = 10
 
 [node name="DraftTitle" type="Label" parent="UI/DraftModal/VBox"]
 layout_mode = 2
 theme_override_colors/font_color = Color(1, 0.85, 0.3, 1)
-theme_override_font_sizes/font_size = 22
-text = "FLOOR CLEARED! CHOOSE YOUR REWARD"
+theme_override_font_sizes/font_size = 24
+text = "ЭТАЖ 1 ПРОЙДЕН! ВЫБЕРИТЕ НАГРАДУ"
 horizontal_alignment = 1
 
 [node name="DraftSubtitle" type="Label" parent="UI/DraftModal/VBox"]
 layout_mode = 2
-theme_override_colors/font_color = Color(0.7, 0.7, 0.75, 1)
+theme_override_colors/font_color = Color(0.75, 0.75, 0.8, 1)
 theme_override_font_sizes/font_size = 13
-text = "Choose 1 relic to equip for this ascent. Replaces existing slot."
+text = "Выберите 1 реликвию для этого восхождения. Она займет ячейку экипировки."
 horizontal_alignment = 1
+
+[node name="CurrentGearHeader" type="Label" parent="UI/DraftModal/VBox"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.7, 0.65, 0.8, 1)
+theme_override_font_sizes/font_size = 11
+text = "ТЕКУЩАЯ ЭКИПИРОВКА:"
+horizontal_alignment = 1
+
+[node name="CurrentGearBar" type="HBoxContainer" parent="UI/DraftModal/VBox"]
+custom_minimum_size = Vector2(0, 48)
+layout_mode = 2
+theme_override_constants/separation = 12
+alignment = 1
 
 [node name="CardsContainer" type="HBoxContainer" parent="UI/DraftModal/VBox"]
 layout_mode = 2
 size_flags_vertical = 3
-theme_override_constants/separation = 30
+theme_override_constants/separation = 28
 alignment = 1
 
-[node name="DefeatModal" type="PanelContainer" parent="UI"]
+[node name="DefeatModal" type="Control" parent="UI"]
 visible = false
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="DimmerBackdrop" type="ColorRect" parent="UI/DefeatModal"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 0
+color = Color(0.01, 0.01, 0.02, 0.96)
+
+[node name="Panel" type="PanelContainer" parent="UI/DefeatModal"]
+layout_mode = 1
 anchors_preset = 8
 anchor_left = 0.5
 anchor_top = 0.5
 anchor_right = 0.5
 anchor_bottom = 0.5
-offset_left = -300.0
-offset_top = -180.0
-offset_right = 300.0
-offset_bottom = 180.0
+offset_left = -320.0
+offset_top = -200.0
+offset_right = 320.0
+offset_bottom = 200.0
 grow_horizontal = 2
 grow_vertical = 2
 
-[node name="VBox" type="VBoxContainer" parent="UI/DefeatModal"]
+[node name="VBox" type="VBoxContainer" parent="UI/DefeatModal/Panel"]
 layout_mode = 2
 theme_override_constants/separation = 18
 alignment = 1
 
-[node name="Title" type="Label" parent="UI/DefeatModal/VBox"]
+[node name="Title" type="Label" parent="UI/DefeatModal/Panel/VBox"]
 layout_mode = 2
-theme_override_colors/font_color = Color(0.9, 0.2, 0.2, 1)
-theme_override_font_sizes/font_size = 24
-text = "YOUR FLESH HAS PERISHED"
+theme_override_colors/font_color = Color(0.95, 0.25, 0.25, 1)
+theme_override_font_sizes/font_size = 28
+text = "ВАША ПЛОТЬ УГАСЛА"
 horizontal_alignment = 1
 
-[node name="SummaryLabel" type="Label" parent="UI/DefeatModal/VBox"]
+[node name="SummaryLabel" type="Label" parent="UI/DefeatModal/Panel/VBox"]
 layout_mode = 2
-theme_override_colors/font_color = Color(0.8, 0.8, 0.85, 1)
+theme_override_colors/font_color = Color(0.85, 0.85, 0.9, 1)
 theme_override_font_sizes/font_size = 14
-text = "You reached Floor 1.
-All items have dissolved into the void.
-Your accumulated gold has been preserved."
+text = "Вы пали в Шпиле..."
 horizontal_alignment = 1
 
-[node name="BtnReturnAltar" type="Button" parent="UI/DefeatModal/VBox"]
-custom_minimum_size = Vector2(240, 48)
+[node name="BtnReturnAltar" type="Button" parent="UI/DefeatModal/Panel/VBox"]
+custom_minimum_size = Vector2(280, 50)
 layout_mode = 2
 size_flags_horizontal = 4
 theme_override_font_sizes/font_size = 16
-text = "RETURN TO BLOOD ALTAR"
+text = "ВЕРНУТЬСЯ К АЛТАРЮ"
+
+[node name="TopHUD" type="Control" parent="UI"]
+layout_mode = 3
+anchors_preset = 10
+anchor_right = 1.0
+offset_bottom = 66.0
+grow_horizontal = 2
+
+[node name="TopBackdrop" type="ColorRect" parent="UI/TopHUD"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0.04, 0.03, 0.05, 0.78)
+
+[node name="LeftControls" type="HBoxContainer" parent="UI/TopHUD"]
+layout_mode = 1
+anchors_preset = 0
+offset_left = 20.0
+offset_top = 14.0
+offset_right = 320.0
+offset_bottom = 50.0
+theme_override_constants/separation = 10
+
+[node name="BtnSettings" type="Button" parent="UI/TopHUD/LeftControls"]
+custom_minimum_size = Vector2(130, 36)
+layout_mode = 2
+theme_override_font_sizes/font_size = 13
+text = "⚙ НАСТРОЙКИ"
+
+[node name="BtnLangQuick" type="Button" parent="UI/TopHUD/LeftControls"]
+custom_minimum_size = Vector2(86, 36)
+layout_mode = 2
+theme_override_font_sizes/font_size = 13
+text = "🌐 РУС"
+
+[node name="FloorBanner" type="Label" parent="UI/TopHUD"]
+layout_mode = 1
+anchors_preset = 10
+anchor_right = 1.0
+offset_top = 16.0
+offset_bottom = 50.0
+grow_horizontal = 2
+theme_override_colors/font_color = Color(0.92, 0.86, 0.76, 1)
+theme_override_font_sizes/font_size = 21
+text = "ЭТАЖ 1: ВОСХОЖДЕНИЕ В ШПИЛЬ"
+horizontal_alignment = 1
+
+[node name="GoldDisplay" type="HBoxContainer" parent="UI/TopHUD"]
+layout_mode = 1
+anchors_preset = 1
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -230.0
+offset_top = 14.0
+offset_right = -20.0
+offset_bottom = 50.0
+grow_horizontal = 0
+theme_override_constants/separation = 8
+alignment = 2
+
+[node name="GoldIcon" type="TextureRect" parent="UI/TopHUD/GoldDisplay"]
+custom_minimum_size = Vector2(30, 30)
+layout_mode = 2
+expand_mode = 1
+stretch_mode = 5
+
+[node name="GoldLabel" type="Label" parent="UI/TopHUD/GoldDisplay"]
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 0.85, 0.25, 1)
+theme_override_font_sizes/font_size = 19
+text = "0 зол."
+
+[node name="SettingsModal" type="Control" parent="UI"]
+visible = false
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="DimmerBackdrop" type="ColorRect" parent="UI/SettingsModal"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 0
+color = Color(0.01, 0.01, 0.02, 0.88)
+
+[node name="Panel" type="PanelContainer" parent="UI/SettingsModal"]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -270.0
+offset_top = -260.0
+offset_right = 270.0
+offset_bottom = 260.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="VBox" type="VBoxContainer" parent="UI/SettingsModal/Panel"]
+layout_mode = 2
+theme_override_constants/separation = 12
+
+[node name="SettingsTitle" type="Label" parent="UI/SettingsModal/Panel/VBox"]
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 0.85, 0.3, 1)
+theme_override_font_sizes/font_size = 22
+text = "НАСТРОЙКИ"
+horizontal_alignment = 1
+
+[node name="HSeparator1" type="HSeparator" parent="UI/SettingsModal/Panel/VBox"]
+layout_mode = 2
+
+[node name="LblMasterVol" type="Label" parent="UI/SettingsModal/Panel/VBox"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 13
+text = "Общая громкость"
+
+[node name="HBoxMaster" type="HBoxContainer" parent="UI/SettingsModal/Panel/VBox"]
+layout_mode = 2
+theme_override_constants/separation = 12
+
+[node name="SliderMaster" type="HSlider" parent="UI/SettingsModal/Panel/VBox/HBoxMaster"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 4
+max_value = 100.0
+step = 1.0
+value = 80.0
+
+[node name="ValMaster" type="Label" parent="UI/SettingsModal/Panel/VBox/HBoxMaster"]
+custom_minimum_size = Vector2(48, 0)
+layout_mode = 2
+theme_override_font_sizes/font_size = 13
+text = "80%"
+horizontal_alignment = 2
+
+[node name="LblSfxVol" type="Label" parent="UI/SettingsModal/Panel/VBox"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 13
+text = "Громкость звуков (SFX)"
+
+[node name="HBoxSfx" type="HBoxContainer" parent="UI/SettingsModal/Panel/VBox"]
+layout_mode = 2
+theme_override_constants/separation = 12
+
+[node name="SliderSfx" type="HSlider" parent="UI/SettingsModal/Panel/VBox/HBoxSfx"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 4
+max_value = 100.0
+step = 1.0
+value = 80.0
+
+[node name="ValSfx" type="Label" parent="UI/SettingsModal/Panel/VBox/HBoxSfx"]
+custom_minimum_size = Vector2(48, 0)
+layout_mode = 2
+theme_override_font_sizes/font_size = 13
+text = "80%"
+horizontal_alignment = 2
+
+[node name="LblMusicVol" type="Label" parent="UI/SettingsModal/Panel/VBox"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 13
+text = "Громкость музыки и фона"
+
+[node name="HBoxMusic" type="HBoxContainer" parent="UI/SettingsModal/Panel/VBox"]
+layout_mode = 2
+theme_override_constants/separation = 12
+
+[node name="SliderMusic" type="HSlider" parent="UI/SettingsModal/Panel/VBox/HBoxMusic"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 4
+max_value = 100.0
+step = 1.0
+value = 50.0
+
+[node name="ValMusic" type="Label" parent="UI/SettingsModal/Panel/VBox/HBoxMusic"]
+custom_minimum_size = Vector2(48, 0)
+layout_mode = 2
+theme_override_font_sizes/font_size = 13
+text = "50%"
+horizontal_alignment = 2
+
+[node name="BtnTestSound" type="Button" parent="UI/SettingsModal/Panel/VBox"]
+custom_minimum_size = Vector2(160, 32)
+layout_mode = 2
+size_flags_horizontal = 0
+theme_override_font_sizes/font_size = 12
+text = "▶ Проверить звук"
+
+[node name="HSeparator2" type="HSeparator" parent="UI/SettingsModal/Panel/VBox"]
+layout_mode = 2
+
+[node name="HBoxLang" type="HBoxContainer" parent="UI/SettingsModal/Panel/VBox"]
+layout_mode = 2
+theme_override_constants/separation = 15
+
+[node name="LblLanguage" type="Label" parent="UI/SettingsModal/Panel/VBox/HBoxLang"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_font_sizes/font_size = 13
+text = "Язык интерфейса"
+
+[node name="BtnToggleLang" type="Button" parent="UI/SettingsModal/Panel/VBox/HBoxLang"]
+custom_minimum_size = Vector2(140, 34)
+layout_mode = 2
+theme_override_font_sizes/font_size = 13
+text = "🇷🇺 Русский"
+
+[node name="CheckFullscreen" type="CheckButton" parent="UI/SettingsModal/Panel/VBox"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 13
+text = "Полноэкранный режим"
+
+[node name="HSeparator3" type="HSeparator" parent="UI/SettingsModal/Panel/VBox"]
+layout_mode = 2
+
+[node name="BtnCloseSettings" type="Button" parent="UI/SettingsModal/Panel/VBox"]
+custom_minimum_size = Vector2(180, 40)
+layout_mode = 2
+size_flags_horizontal = 4
+theme_override_font_sizes/font_size = 14
+text = "ЗАКРЫТЬ"
 
 [node name="PostProcessing" type="CanvasLayer" parent="."]
 layer = 20

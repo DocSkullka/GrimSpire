@@ -4,6 +4,11 @@ var save_data: Dictionary = {
 	"PersistentGold": 0,
 	"HighestFloorReached": 1,
 	"TotalRunsPlayed": 0,
+	"Language": "ru",
+	"MasterVolume": 0.8,
+	"SfxVolume": 0.8,
+	"MusicVolume": 0.5,
+	"Fullscreen": false,
 	"UpgradeRanks": {
 		"Health": 0,
 		"Damage": 0,
@@ -40,6 +45,12 @@ func load_game():
 			save_data["PersistentGold"] = int(d.get("PersistentGold", 0))
 			save_data["HighestFloorReached"] = max(1, int(d.get("HighestFloorReached", 1)))
 			save_data["TotalRunsPlayed"] = int(d.get("TotalRunsPlayed", 0))
+			save_data["Language"] = str(d.get("Language", "ru"))
+			save_data["MasterVolume"] = float(d.get("MasterVolume", 0.8))
+			save_data["SfxVolume"] = float(d.get("SfxVolume", 0.8))
+			save_data["MusicVolume"] = float(d.get("MusicVolume", 0.5))
+			save_data["Fullscreen"] = bool(d.get("Fullscreen", false))
+			
 			if d.has("UpgradeRanks") and d["UpgradeRanks"] is Dictionary:
 				for k in save_data["UpgradeRanks"].keys():
 					save_data["UpgradeRanks"][k] = int(d["UpgradeRanks"].get(k, 0))
@@ -77,3 +88,38 @@ func increment_upgrade_rank(upgrade_name: String):
 	if save_data["UpgradeRanks"].has(upgrade_name):
 		save_data["UpgradeRanks"][upgrade_name] += 1
 		save_game()
+
+func get_language() -> String:
+	return save_data.get("Language", "ru")
+
+func set_language(lang: String):
+	save_data["Language"] = lang
+	save_game()
+
+func get_master_volume() -> float:
+	return float(save_data.get("MasterVolume", 0.8))
+
+func set_master_volume(vol: float):
+	save_data["MasterVolume"] = vol
+	save_game()
+
+func get_sfx_volume() -> float:
+	return float(save_data.get("SfxVolume", 0.8))
+
+func set_sfx_volume(vol: float):
+	save_data["SfxVolume"] = vol
+	save_game()
+
+func get_music_volume() -> float:
+	return float(save_data.get("MusicVolume", 0.5))
+
+func set_music_volume(vol: float):
+	save_data["MusicVolume"] = vol
+	save_game()
+
+func get_fullscreen() -> bool:
+	return bool(save_data.get("Fullscreen", false))
+
+func set_fullscreen(fs: bool):
+	save_data["Fullscreen"] = fs
+	save_game()
