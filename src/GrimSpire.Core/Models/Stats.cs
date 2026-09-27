@@ -14,6 +14,8 @@ public record Stats
     public double CritMultiplier { get; init; } = 0;
     public double Lifesteal { get; init; } = 0;
     public double DodgeChance { get; init; } = 0;
+    public double DamageReduction { get; init; } = 0;
+    public double GoldMultiplier { get; init; } = 0;
 
     /// <summary>
     /// Default starting attributes for an un-upgraded fresh adventurer.
@@ -27,7 +29,9 @@ public record Stats
         CritChance = 0.05,
         CritMultiplier = 1.5,
         Lifesteal = 0.0,
-        DodgeChance = 0.05
+        DodgeChance = 0.05,
+        DamageReduction = 0.0,
+        GoldMultiplier = 0.0
     };
 
     public static Stats operator +(Stats a, Stats b) => new()
@@ -39,7 +43,9 @@ public record Stats
         CritChance = Math.Clamp(a.CritChance + b.CritChance, 0.0, 1.0),
         CritMultiplier = Math.Max(0.0, a.CritMultiplier + b.CritMultiplier),
         Lifesteal = Math.Clamp(a.Lifesteal + b.Lifesteal, 0.0, 1.0),
-        DodgeChance = Math.Clamp(a.DodgeChance + b.DodgeChance, 0.0, 0.75)
+        DodgeChance = Math.Clamp(a.DodgeChance + b.DodgeChance, 0.0, 0.75),
+        DamageReduction = Math.Clamp(a.DamageReduction + b.DamageReduction, 0.0, 0.80),
+        GoldMultiplier = Math.Max(0.0, a.GoldMultiplier + b.GoldMultiplier)
     };
 
     /// <summary>

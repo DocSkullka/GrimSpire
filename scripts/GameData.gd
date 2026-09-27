@@ -29,28 +29,53 @@ func _load_json(path: String) -> Array:
 	return []
 
 func get_random_items(count: int, floor_num: int) -> Array:
+	return get_smart_draft_items(count, floor_num, {})
+
+func get_smart_draft_items(count: int, floor_num: int, current_equipped: Dictionary) -> Array:
 	if items.is_empty():
 		return []
 	
-	# Weighted rarity selection based on floor progression
 	var pool = items.duplicate()
 	pool.shuffle()
+	
+	# Exclude direct identical duplicates from pool
+	var equipped_names = {}
+	for slot in current_equipped:
+		var eq = current_equipped[slot]
+		if eq != null:
+			equipped_names[eq.get("name", "")] = true
+	
+	var filtered_pool = []
+	for itm in pool:
+		if not equipped_names.has(itm.get("name", "")):
+			filtered_pool.append(itm)
+	if filtered_pool.size() < count:
+		filtered_pool = pool
 	
 	var chosen: Array = []
 	var chosen_slots = {}
 	
-	# First try picking items with distinct slots for maximum diversity
-	for item in pool:
+	# Diversity first: distinct equipment slots
+	for item in filtered_pool:
 		var slot = item.get("slot", "")
 		if not chosen_slots.has(slot):
-			chosen.append(item.duplicate(true))
+			var itm_copy = item.duplicate(true)
+			# Check if eligible for fusion with equipped item in this slot
+			if current_equipped.has(slot) and current_equipped[slot] != null:
+				var eq = current_equipped[slot]
+				var eq_tier = eq.get("tier", 1)
+				if eq_tier < 3 and randf() < 0.45:
+					itm_copy["is_fusion"] = true
+					itm_copy["fusion_target_name"] = eq.get("name", "")
+					itm_copy["new_tier"] = eq_tier + 1
+			chosen.append(itm_copy)
 			chosen_slots[slot] = true
 			if chosen.size() >= count:
 				break
 	
-	# If not enough distinct slots, fill with remaining items
+	# Fill remaining if needed
 	if chosen.size() < count:
-		for item in pool:
+		for item in filtered_pool:
 			var found = false
 			for c in chosen:
 				if c.get("id") == item.get("id"):
@@ -62,6 +87,31 @@ func get_random_items(count: int, floor_num: int) -> Array:
 					break
 	
 	return chosen
+
+func fuse_items(base_item: Dictionary, _sac_item: Dictionary) -> Dictionary:
+	var cur_tier = base_item.get("tier", 1)
+	var new_tier = min(3, cur_tier + 1)
+	var mult = 1.6 if new_tier == 2 else 2.4
+	
+	var fused = base_item.duplicate(true)
+	fused["tier"] = new_tier
+	var clean_name = base_item.get("name", "Relic")
+	clean_name = clean_name.replace(" [Тир II]", "").replace(" [Тир III ★]", "")
+	clean_name = clean_name.replace(" [Tier II]", "").replace(" [Tier III ★]", "")
+	fused["name"] = "%s %s" % [clean_name, "[Тир II]" if new_tier == 2 else "[Тир III ★]"]
+	
+	var new_stats = {}
+	var old_stats = base_item.get("stats", {})
+	for k in old_stats:
+		var val = old_stats[k]
+		if val is float:
+			new_stats[k] = round(val * (1.2 if new_tier == 2 else 1.35) * 100.0) / 100.0
+		else:
+			new_stats[k] = int(round(val * mult))
+	fused["stats"] = new_stats
+	fused["description"] = "%s (Эволюция Тир %d: увеличены характеристики)" % [base_item.get("description", ""), new_tier]
+	return fused
+
 
 func get_enemy_for_floor(floor_num: int) -> Dictionary:
 	var template: Dictionary = {}

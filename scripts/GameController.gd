@@ -190,6 +190,16 @@ var btn_skip_draft: Button
 var main_menu_modal: Control
 var compendium_modal: Control
 
+# Rebirth 3D & Squad Controller
+var rebirth_3d: Node = null
+var party_members: Dictionary = {}
+var party_hud_container: VBoxContainer = null
+var party_hp_bars: Dictionary = {}
+var party_labels: Dictionary = {}
+var party_modal: Control = null
+var chest_modal: Control = null
+var chest_btn_thief: Button = null
+
 func _safe_load_tex(path: String) -> Texture2D:
 	if ResourceLoader.exists(path):
 		var res = load(path)
@@ -209,8 +219,13 @@ func _ready():
 	player_anchor.position = player_base_pos
 	enemy_anchor.position = enemy_base_pos
 	
+	_init_rebirth_party()
+	_init_rebirth_3d()
 	_build_modular_rigs()
 	_build_enhanced_ui()
+	_build_party_hud()
+	_build_party_modal()
+	_build_chest_modal()
 	_apply_ui_theming()
 	_init_localization_and_settings()
 	
@@ -563,6 +578,13 @@ func _build_enhanced_ui():
 	camp_nav_hbox.add_theme_constant_override("separation", 16)
 	camp_vbox.add_child(camp_nav_hbox)
 	
+	var btn_camp_party = Button.new()
+	btn_camp_party.custom_minimum_size = Vector2(230, 42)
+	btn_camp_party.text = "👥 ОТРЯД СПУТНИКОВ (4)"
+	btn_camp_party.add_theme_font_size_override("font_size", 13)
+	btn_camp_party.pressed.connect(_open_party_modal)
+	camp_nav_hbox.add_child(btn_camp_party)
+	
 	var btn_camp_compendium = Button.new()
 	btn_camp_compendium.custom_minimum_size = Vector2(240, 42)
 	btn_camp_compendium.text = "📖 БЕСТИАРИЙ И АРСЕНАЛ"
@@ -873,6 +895,392 @@ func _build_compendium_modal():
 	
 	ui_canvas.add_child(compendium_modal)
 
+# ==============================================================================
+# REBIRTH 3D & SQUAD PARTY MANAGEMENT
+# ==============================================================================
+
+func _init_rebirth_party():
+	party_members = {
+		"bulwark": {
+			"id": "bulwark", "name": "The Bulwark", "role": "Tank", "role_title": "ТАНК",
+			"unlocked": true, "active": true,
+			"max_hp": 220, "current_hp": 220, "armor": 28, "damage": 16, "speed": 0.75,
+			"taunt_timer": 0.0, "taunt_cooldown": 7.5, "cooldown": 0.0
+		},
+		"wanderer": {
+			"id": "wanderer", "name": "The Wanderer", "role": "Hero", "role_title": "ГЕРОЙ",
+			"unlocked": true, "active": true,
+			"max_hp": 120, "current_hp": 120, "armor": 8, "damage": 20, "speed": 1.0,
+			"soul_gauge": 0.0, "cooldown": 0.0
+		},
+		"nightshade": {
+			"id": "nightshade", "name": "The Nightshade", "role": "Thief", "role_title": "ВОР",
+			"unlocked": true, "active": true,
+			"max_hp": 100, "current_hp": 100, "armor": 6, "damage": 28, "speed": 1.45,
+			"crit_chance": 0.38, "crit_multiplier": 2.2, "backstab_cooldown": 5.5, "cooldown": 0.0
+		},
+		"bloodweaver": {
+			"id": "bloodweaver", "name": "The Bloodweaver", "role": "Cleric", "role_title": "ХИЛЕР",
+			"unlocked": true, "active": true,
+			"max_hp": 95, "current_hp": 95, "armor": 8, "damage": 15, "speed": 0.9,
+			"heal_cooldown": 6.5, "cooldown": 0.0
+		}
+	}
+	if save_manager:
+		for role in party_members:
+			var st = save_manager.get_companion_state(role)
+			party_members[role]["unlocked"] = st.get("unlocked", true)
+			party_members[role]["active"] = st.get("active", true)
+
+func _init_rebirth_3d():
+	var script = load("res://scripts/Rebirth3DManager.gd")
+	if script:
+		rebirth_3d = script.new()
+		add_child(rebirth_3d)
+		rebirth_3d.setup_3d_world(self)
+		for role in party_members:
+			rebirth_3d.set_companion_active(role, party_members[role]["active"])
+
+func _build_party_hud():
+	if battle_hud == null: return
+	party_hud_container = VBoxContainer.new()
+	party_hud_container.position = Vector2(40, 540)
+	party_hud_container.custom_minimum_size = Vector2(320, 140)
+	party_hud_container.add_theme_constant_override("separation", 4)
+	battle_hud.add_child(party_hud_container)
+
+	var roles = [
+		{"id": "bulwark", "icon": "🛡", "col": Color(0.3, 0.7, 1.0)},
+		{"id": "wanderer", "icon": "⚔", "col": Color(1.0, 0.85, 0.3)},
+		{"id": "nightshade", "icon": "🗡", "col": Color(0.2, 0.9, 0.4)},
+		{"id": "bloodweaver", "icon": "🩸", "col": Color(0.9, 0.25, 0.35)}
+	]
+
+	for r in roles:
+		var r_id = r["id"]
+		var row = HBoxContainer.new()
+		row.custom_minimum_size = Vector2(320, 22)
+		row.add_theme_constant_override("separation", 6)
+		party_hud_container.add_child(row)
+
+		var lbl = Label.new()
+		lbl.custom_minimum_size = Vector2(140, 20)
+		lbl.add_theme_font_size_override("font_size", 11)
+		lbl.add_theme_color_override("font_color", r["col"])
+		row.add_child(lbl)
+		party_labels[r_id] = lbl
+
+		var bar = ProgressBar.new()
+		bar.custom_minimum_size = Vector2(170, 16)
+		bar.show_percentage = false
+		bar.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+		_style_hp_bar(bar, r["col"])
+		row.add_child(bar)
+		party_hp_bars[r_id] = bar
+
+func _update_party_hud():
+	for r_id in party_members:
+		var m = party_members[r_id]
+		var is_act = m.get("active", true)
+		if party_labels.has(r_id) and party_labels[r_id] != null:
+			var lbl: Label = party_labels[r_id]
+			lbl.visible = is_act
+			if r_id == "bulwark":
+				lbl.text = "🛡 Танк: %d/%d" % [m["current_hp"], m["max_hp"]]
+			elif r_id == "wanderer":
+				lbl.text = "⚔ Герой: %d/%d" % [m["current_hp"], m["max_hp"]]
+			elif r_id == "nightshade":
+				lbl.text = "🗡 Вор: %d/%d" % [m["current_hp"], m["max_hp"]]
+			elif r_id == "bloodweaver":
+				lbl.text = "🩸 Хилер: %d/%d" % [m["current_hp"], m["max_hp"]]
+
+		if party_hp_bars.has(r_id) and party_hp_bars[r_id] != null:
+			var bar: ProgressBar = party_hp_bars[r_id]
+			bar.visible = is_act
+			bar.max_value = m["max_hp"]
+			bar.value = m["current_hp"]
+
+func _build_party_modal():
+	party_modal = Control.new()
+	party_modal.set_anchors_preset(Control.PRESET_FULL_RECT)
+	party_modal.visible = false
+
+	var dim = ColorRect.new()
+	dim.set_anchors_preset(Control.PRESET_FULL_RECT)
+	dim.color = Color(0.02, 0.01, 0.03, 0.88)
+	party_modal.add_child(dim)
+
+	var panel = PanelContainer.new()
+	panel.custom_minimum_size = Vector2(850, 560)
+	panel.position = Vector2((1280 - 850) / 2, (720 - 560) / 2)
+	var p_style = StyleBoxFlat.new()
+	p_style.bg_color = Color(0.07, 0.06, 0.09, 0.98)
+	p_style.border_color = Color(0.7, 0.55, 0.25, 0.9)
+	p_style.border_width_left = 2
+	p_style.border_width_top = 2
+	p_style.border_width_right = 2
+	p_style.border_width_bottom = 2
+	p_style.corner_radius_top_left = 8
+	p_style.corner_radius_top_right = 8
+	p_style.corner_radius_bottom_left = 8
+	p_style.corner_radius_bottom_right = 8
+	p_style.content_margin_left = 20
+	p_style.content_margin_top = 16
+	p_style.content_margin_right = 20
+	p_style.content_margin_bottom = 16
+	panel.add_theme_stylebox_override("panel", p_style)
+	party_modal.add_child(panel)
+
+	var vbox = VBoxContainer.new()
+	vbox.add_theme_constant_override("separation", 12)
+	panel.add_child(vbox)
+
+	var title = Label.new()
+	title.text = localization.get_string("party_title")
+	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	title.add_theme_font_size_override("font_size", 20)
+	title.add_theme_color_override("font_color", Color(1.0, 0.85, 0.3))
+	vbox.add_child(title)
+
+	var sub = Label.new()
+	sub.text = localization.get_string("party_subtitle")
+	sub.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	sub.add_theme_font_size_override("font_size", 12)
+	sub.add_theme_color_override("font_color", Color(0.75, 0.75, 0.8))
+	vbox.add_child(sub)
+
+	var cards_grid = GridContainer.new()
+	cards_grid.columns = 2
+	cards_grid.add_theme_constant_override("h_separation", 14)
+	cards_grid.add_theme_constant_override("v_separation", 14)
+	cards_grid.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	vbox.add_child(cards_grid)
+
+	var char_data = [
+		{"id": "bulwark", "name_key": "party_tank", "desc_key": "party_tank_desc", "col": Color(0.35, 0.75, 1.0)},
+		{"id": "wanderer", "name_key": "party_wanderer", "desc_key": "party_wanderer_desc", "col": Color(1.0, 0.88, 0.35)},
+		{"id": "nightshade", "name_key": "party_thief", "desc_key": "party_thief_desc", "col": Color(0.25, 0.95, 0.45)},
+		{"id": "bloodweaver", "name_key": "party_cleric", "desc_key": "party_cleric_desc", "col": Color(0.95, 0.3, 0.35)}
+	]
+
+	for cd in char_data:
+		var c_id = cd["id"]
+		var c_panel = PanelContainer.new()
+		c_panel.custom_minimum_size = Vector2(390, 150)
+		var c_style = StyleBoxFlat.new()
+		c_style.bg_color = Color(0.10, 0.08, 0.12, 0.9)
+		c_style.border_color = cd["col"]
+		c_style.border_width_left = 1
+		c_style.border_width_top = 1
+		c_style.border_width_right = 1
+		c_style.border_width_bottom = 1
+		c_style.corner_radius_top_left = 6
+		c_style.corner_radius_top_right = 6
+		c_style.corner_radius_bottom_left = 6
+		c_style.corner_radius_bottom_right = 6
+		c_style.content_margin_left = 12
+		c_style.content_margin_top = 10
+		c_style.content_margin_right = 12
+		c_style.content_margin_bottom = 10
+		c_panel.add_theme_stylebox_override("panel", c_style)
+		cards_grid.add_child(c_panel)
+
+		var c_vbox = VBoxContainer.new()
+		c_vbox.add_theme_constant_override("separation", 6)
+		c_panel.add_child(c_vbox)
+
+		var c_title = Label.new()
+		c_title.text = localization.get_string(cd["name_key"])
+		c_title.add_theme_font_size_override("font_size", 14)
+		c_title.add_theme_color_override("font_color", cd["col"])
+		c_vbox.add_child(c_title)
+
+		var c_desc = Label.new()
+		c_desc.text = localization.get_string(cd["desc_key"])
+		c_desc.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		c_desc.add_theme_font_size_override("font_size", 11)
+		c_desc.add_theme_color_override("font_color", Color(0.75, 0.75, 0.8))
+		c_vbox.add_child(c_desc)
+
+		var spacer = Control.new()
+		spacer.size_flags_vertical = Control.SIZE_EXPAND_FILL
+		c_vbox.add_child(spacer)
+
+		if c_id != "wanderer":
+			var btn_toggle = Button.new()
+			btn_toggle.custom_minimum_size = Vector2(180, 32)
+			var is_act = party_members[c_id].get("active", true)
+			btn_toggle.text = "В строю: " + ("ВКЛ ✓" if is_act else "ВЫКЛ ✗")
+			btn_toggle.add_theme_font_size_override("font_size", 11)
+			btn_toggle.pressed.connect(func():
+				var new_state = not party_members[c_id]["active"]
+				party_members[c_id]["active"] = new_state
+				save_manager.set_companion_active(c_id, new_state)
+				btn_toggle.text = "В строю: " + ("ВКЛ ✓" if new_state else "ВЫКЛ ✗")
+				if rebirth_3d:
+					rebirth_3d.set_companion_active(c_id, new_state)
+				sound_manager.play_click()
+			)
+			c_vbox.add_child(btn_toggle)
+		else:
+			var lbl_fixed = Label.new()
+			lbl_fixed.text = "[Лидер экспедиции • Всегда в строю]"
+			lbl_fixed.add_theme_font_size_override("font_size", 11)
+			lbl_fixed.add_theme_color_override("font_color", Color(0.5, 0.9, 0.5))
+			c_vbox.add_child(lbl_fixed)
+
+	var btn_close = Button.new()
+	btn_close.custom_minimum_size = Vector2(220, 38)
+	btn_close.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	btn_close.text = "ЗАКРЫТЬ"
+	btn_close.add_theme_font_size_override("font_size", 13)
+	btn_close.pressed.connect(func():
+		sound_manager.play_click()
+		party_modal.visible = false
+	)
+	vbox.add_child(btn_close)
+
+	ui_canvas.add_child(party_modal)
+
+func _open_party_modal():
+	sound_manager.play_click()
+	if party_modal:
+		party_modal.visible = true
+
+func _build_chest_modal():
+	chest_modal = Control.new()
+	chest_modal.set_anchors_preset(Control.PRESET_FULL_RECT)
+	chest_modal.visible = false
+
+	var dim = ColorRect.new()
+	dim.set_anchors_preset(Control.PRESET_FULL_RECT)
+	dim.color = Color(0.02, 0.01, 0.03, 0.85)
+	chest_modal.add_child(dim)
+
+	var panel = PanelContainer.new()
+	panel.name = "Panel"
+	panel.custom_minimum_size = Vector2(560, 380)
+	panel.position = Vector2((1280 - 560) / 2, (720 - 380) / 2)
+	var p_style = StyleBoxFlat.new()
+	p_style.bg_color = Color(0.08, 0.06, 0.10, 0.98)
+	p_style.border_color = Color(1.0, 0.75, 0.2, 0.9)
+	p_style.border_width_left = 2
+	p_style.border_width_top = 2
+	p_style.border_width_right = 2
+	p_style.border_width_bottom = 2
+	p_style.corner_radius_top_left = 8
+	p_style.corner_radius_top_right = 8
+	p_style.corner_radius_bottom_left = 8
+	p_style.corner_radius_bottom_right = 8
+	p_style.content_margin_left = 24
+	p_style.content_margin_top = 20
+	p_style.content_margin_right = 24
+	p_style.content_margin_bottom = 20
+	panel.add_theme_stylebox_override("panel", p_style)
+	chest_modal.add_child(panel)
+
+	var vbox = VBoxContainer.new()
+	vbox.name = "ChestVBox"
+	vbox.add_theme_constant_override("separation", 14)
+	panel.add_child(vbox)
+
+	var lbl_title = Label.new()
+	lbl_title.name = "ChestTitle"
+	lbl_title.text = localization.get_string("chest_title") % current_floor if localization else "СОКРОВИЩНИЦА ЭТАЖА"
+	lbl_title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	lbl_title.add_theme_font_size_override("font_size", 20)
+	lbl_title.add_theme_color_override("font_color", Color(1.0, 0.85, 0.25))
+	vbox.add_child(lbl_title)
+
+	var lbl_desc = Label.new()
+	lbl_desc.name = "ChestDesc"
+	lbl_desc.text = localization.get_string("chest_subtitle") if localization else "Отряд наткнулся на кованый готический ларец с рунической печатью."
+	lbl_desc.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	lbl_desc.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	lbl_desc.add_theme_font_size_override("font_size", 13)
+	lbl_desc.add_theme_color_override("font_color", Color(0.8, 0.8, 0.85))
+	vbox.add_child(lbl_desc)
+
+	var spacer = Control.new()
+	spacer.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	vbox.add_child(spacer)
+
+	var btn_thief = Button.new()
+	btn_thief.name = "BtnThiefPick"
+	btn_thief.custom_minimum_size = Vector2(500, 48)
+	btn_thief.text = localization.get_string("chest_pick_thief") if localization else "🗝 Вор в отряде: Вскрыть отмычками (100% успех!)"
+	btn_thief.add_theme_font_size_override("font_size", 14)
+	btn_thief.add_theme_color_override("font_color", Color(0.3, 1.0, 0.5))
+	btn_thief.pressed.connect(_on_thief_lockpick_pressed)
+	vbox.add_child(btn_thief)
+	chest_btn_thief = btn_thief
+
+	var btn_force = Button.new()
+	btn_force.name = "BtnForceLock"
+	btn_force.custom_minimum_size = Vector2(500, 42)
+	btn_force.text = localization.get_string("chest_force") if localization else "🔨 Сбить замок оружием (риск 50% сломать лут/ловушка)"
+	btn_force.add_theme_font_size_override("font_size", 12)
+	btn_force.pressed.connect(_on_force_lock_pressed)
+	vbox.add_child(btn_force)
+
+	var btn_leave = Button.new()
+	btn_leave.name = "BtnLeaveChest"
+	btn_leave.custom_minimum_size = Vector2(500, 38)
+	btn_leave.text = localization.get_string("chest_leave") if localization else "🚪 Оставить сундук и идти к лифту"
+	btn_leave.add_theme_font_size_override("font_size", 12)
+	btn_leave.pressed.connect(_on_leave_chest_pressed)
+	vbox.add_child(btn_leave)
+
+	ui_canvas.add_child(chest_modal)
+
+func _show_treasure_chest_modal():
+	if chest_modal == null:
+		_enter_draft_state()
+		return
+	
+	var has_thief = party_members.get("nightshade", {}).get("active", false)
+	if chest_btn_thief != null:
+		chest_btn_thief.visible = has_thief
+	
+	var vbox = chest_modal.get_node_or_null("Panel/ChestVBox")
+	if vbox:
+		var lbl_t: Label = vbox.get_node_or_null("ChestTitle")
+		if lbl_t and localization:
+			lbl_t.text = localization.get_string("chest_title") % current_floor
+		var lbl_d: Label = vbox.get_node_or_null("ChestDesc")
+		if lbl_d and localization:
+			lbl_d.text = localization.get_string("chest_subtitle")
+	
+	chest_modal.visible = true
+
+func _on_thief_lockpick_pressed():
+	chest_modal.visible = false
+	sound_manager.play_lockpick()
+	_enter_draft_state()
+	if rebirth_3d:
+		rebirth_3d.animate_thief_lockpick(Callable())
+
+func _on_force_lock_pressed():
+	chest_modal.visible = false
+	sound_manager.play_hit()
+	if randf() < 0.5:
+		_log("[color=gold]Замок поддался под ударом клинка! Сундук открыт.[/color]")
+		_enter_draft_state()
+	else:
+		sound_manager.play_hit()
+		var trap_dmg = 15
+		player_stats["current_health"] = max(1, player_stats["current_health"] - trap_dmg)
+		_log("[color=crimson]Ловушка! Сработал ядовитый шип (-%d ОЗ).[/color]" % trap_dmg)
+		_enter_draft_state()
+
+func _on_leave_chest_pressed():
+	chest_modal.visible = false
+	current_floor += 1
+	_start_floor_battle(true)
+	if rebirth_3d:
+		sound_manager.play_elevator()
+		rebirth_3d.animate_elevator_ascent(Callable())
+
 func _get_enemy_texture_for_id(e_id: String) -> Texture2D:
 	match e_id:
 		"feeble_skeleton": return tex_enemy_skeleton
@@ -1060,10 +1468,39 @@ func _process_battle_loop(delta: float):
 	if enemy_data.is_empty() or player_stats.is_empty() or is_traversing:
 		return
 	
-	# Cooldown decrements
+	# -------------------------------------------------------------
+	# 1. Frontline Tank (Bulwark)
+	# -------------------------------------------------------------
+	if party_members.get("bulwark", {}).get("active", false) and party_members["bulwark"].get("current_hp", 0) > 0:
+		var bulwark = party_members["bulwark"]
+		bulwark["taunt_timer"] = max(0.0, bulwark.get("taunt_timer", 0.0) - delta)
+		bulwark["taunt_cooldown"] = max(0.0, bulwark.get("taunt_cooldown", 0.0) - delta)
+		if bulwark["taunt_cooldown"] <= 0.0:
+			bulwark["taunt_cooldown"] = 7.5
+			bulwark["taunt_timer"] = 4.0
+			sound_manager.play_taunt()
+			if rebirth_3d:
+				rebirth_3d.animate_tank_taunt()
+			_spawn_combat_badge(player_anchor.position + Vector2(-60, -220), "🛡 ПРОВОКАЦИЯ / TAUNT", Color(0.1, 0.4, 0.8, 0.95), Color(0.4, 0.8, 1.0, 1.0))
+			_log("[color=#4da6ff]🛡 Оплот применяет Провокацию! Удары монстров перенаправлены на щит (-60% урона).[/color]")
+		
+		bulwark["cooldown"] = max(0.0, bulwark.get("cooldown", 0.0) - delta)
+		if enemy_data.get("current_health", 0) > 0 and bulwark["cooldown"] <= 0.0:
+			bulwark["cooldown"] = 1.0 / bulwark.get("speed", 0.75)
+			if rebirth_3d:
+				rebirth_3d.animate_companion_attack("bulwark", Vector3.ZERO, false)
+			var t_dmg = bulwark.get("damage", 16)
+			enemy_data["current_health"] = max(0, enemy_data["current_health"] - t_dmg)
+			_spawn_floating_text(enemy_anchor.position + Vector2(-30, -120), "-%d" % t_dmg, Color(0.4, 0.7, 1.0))
+			_update_hud()
+			if enemy_data["current_health"] <= 0:
+				_on_enemy_defeated()
+				return
+
+	# -------------------------------------------------------------
+	# 2. Midline Hero (Wanderer)
+	# -------------------------------------------------------------
 	player_attack_cooldown -= delta
-	enemy_attack_cooldown -= delta
-	
 	if player_attack_cooldown <= 0.0:
 		if player_soul >= 100.0:
 			_execute_player_soul_cleave()
@@ -1071,11 +1508,101 @@ func _process_battle_loop(delta: float):
 			_execute_player_attack()
 		var p_spd = max(0.2, float(player_stats.get("attack_speed", 1.0)))
 		player_attack_cooldown = 1.0 / p_spd
-	
+		if enemy_data.get("current_health", 0) <= 0:
+			return
+
+	# -------------------------------------------------------------
+	# 3. Flank Thief (Nightshade)
+	# -------------------------------------------------------------
+	if party_members.get("nightshade", {}).get("active", false) and party_members["nightshade"].get("current_hp", 0) > 0:
+		var thief = party_members["nightshade"]
+		thief["backstab_cooldown"] = max(0.0, thief.get("backstab_cooldown", 0.0) - delta)
+		if enemy_data.get("current_health", 0) > 0 and thief["backstab_cooldown"] <= 0.0:
+			thief["backstab_cooldown"] = 5.5
+			sound_manager.play_backstab()
+			if rebirth_3d:
+				rebirth_3d.animate_thief_backstab()
+			var bs_dmg = int(thief.get("damage", 28) * 3.0)
+			enemy_data["current_health"] = max(0, enemy_data["current_health"] - bs_dmg)
+			_spawn_combat_badge(enemy_anchor.position + Vector2(40, -210), "🗡 УДАР В СПИНУ / BACKSTAB", Color(0.1, 0.6, 0.25, 0.95), Color(0.4, 1.0, 0.5, 1.0))
+			_spawn_floating_text(enemy_anchor.position + Vector2(20, -150), "⚡-%d" % bs_dmg, Color(0.2, 1.0, 0.4), 1.4)
+			_log("[color=#33ff77]🗡 Тень наносит сокрушительный удар в спину: %d критического урона![/color]" % bs_dmg)
+			_shake_node(enemy_anchor, 8.0)
+			_update_hud()
+			if enemy_data["current_health"] <= 0:
+				_on_enemy_defeated()
+				return
+		
+		thief["cooldown"] = max(0.0, thief.get("cooldown", 0.0) - delta)
+		if enemy_data.get("current_health", 0) > 0 and thief["cooldown"] <= 0.0:
+			thief["cooldown"] = 1.0 / thief.get("speed", 1.45)
+			var is_crit = randf() < thief.get("crit_chance", 0.38)
+			var dmg = thief.get("damage", 28)
+			if is_crit:
+				dmg = int(dmg * thief.get("crit_multiplier", 2.2))
+			if rebirth_3d:
+				rebirth_3d.animate_companion_attack("nightshade", Vector3.ZERO, is_crit)
+			enemy_data["current_health"] = max(0, enemy_data["current_health"] - dmg)
+			_spawn_floating_text(enemy_anchor.position + Vector2(randf_range(-15, 15), -110), "-%d" % dmg, Color(0.25, 0.9, 0.45))
+			_update_hud()
+			if enemy_data["current_health"] <= 0:
+				_on_enemy_defeated()
+				return
+
+	# -------------------------------------------------------------
+	# 4. Backline Cleric (Bloodweaver)
+	# -------------------------------------------------------------
+	if party_members.get("bloodweaver", {}).get("active", false) and party_members["bloodweaver"].get("current_hp", 0) > 0:
+		var cleric = party_members["bloodweaver"]
+		cleric["heal_cooldown"] = max(0.0, cleric.get("heal_cooldown", 0.0) - delta)
+		if cleric["heal_cooldown"] <= 0.0:
+			cleric["heal_cooldown"] = 6.5
+			var lowest_role = ""
+			var lowest_pct = 1.0
+			for r in party_members:
+				if party_members[r].get("active", true):
+					var pct = float(party_members[r]["current_hp"]) / float(party_members[r]["max_hp"])
+					if pct < lowest_pct:
+						lowest_pct = pct
+						lowest_role = r
+			if lowest_role != "" and lowest_pct < 0.95:
+				sound_manager.play_heal()
+				if rebirth_3d:
+					rebirth_3d.animate_cleric_heal(lowest_role)
+				var target_m = party_members[lowest_role]
+				var h_amt = int(target_m["max_hp"] * 0.25)
+				target_m["current_hp"] = min(target_m["max_hp"], target_m["current_hp"] + h_amt)
+				if lowest_role == "wanderer":
+					player_stats["current_health"] = min(player_stats["max_health"], player_stats["current_health"] + h_amt)
+					_spawn_floating_text(player_anchor.position + Vector2(0, -140), "+%d ОЗ" % h_amt, Color(0.95, 0.3, 0.4))
+				_spawn_combat_badge(player_anchor.position + Vector2(0, -210), "🩸 ИСЦЕЛЕНИЕ КРОВИ / BLOOD HEAL", Color(0.7, 0.1, 0.2, 0.95), Color(1.0, 0.4, 0.5, 1.0))
+				_log("[color=#ff4d66]🩸 Кровный Ткач исцеляет %s на +%d ОЗ![/color]" % [target_m["name"], h_amt])
+				_update_party_hud()
+				_update_hud()
+		
+		cleric["cooldown"] = max(0.0, cleric.get("cooldown", 0.0) - delta)
+		if enemy_data.get("current_health", 0) > 0 and cleric["cooldown"] <= 0.0:
+			cleric["cooldown"] = 1.0 / cleric.get("speed", 0.9)
+			if rebirth_3d:
+				rebirth_3d.animate_companion_attack("bloodweaver", Vector3.ZERO, false)
+			var c_dmg = cleric.get("damage", 15)
+			enemy_data["current_health"] = max(0, enemy_data["current_health"] - c_dmg)
+			_spawn_floating_text(enemy_anchor.position + Vector2(10, -100), "-%d" % c_dmg, Color(0.9, 0.35, 0.45))
+			_update_hud()
+			if enemy_data["current_health"] <= 0:
+				_on_enemy_defeated()
+				return
+
+	# -------------------------------------------------------------
+	# 5. Enemy Attack
+	# -------------------------------------------------------------
+	enemy_attack_cooldown -= delta
 	if enemy_data.get("current_health", 0) > 0 and enemy_attack_cooldown <= 0.0:
 		_execute_enemy_attack()
 		var e_spd = max(0.2, float(enemy_data.get("attack_speed", 1.0)))
 		enemy_attack_cooldown = 1.0 / e_spd
+	
+	_update_party_hud()
 
 # ==============================================================================
 # SETTINGS & LOCALIZATION HANDLING
@@ -1192,6 +1719,12 @@ func _enter_camp_state():
 	$Arena.visible = false
 	if archway_sprite: archway_sprite.visible = false
 	if chest_sprite: chest_sprite.visible = false
+	if chest_modal: chest_modal.visible = false
+	
+	if rebirth_3d:
+		rebirth_3d.set_stage_camp()
+	if sound_manager:
+		sound_manager.play_camp_theme()
 	
 	floor_banner.text = ""
 	_refresh_camp_ui()
@@ -1274,14 +1807,21 @@ func _on_buy_upgrade(type_name: String, cost: int):
 		_refresh_camp_ui()
 
 func _on_ascend_pressed():
-	sound_manager.play_click()
+	sound_manager.play_gate()
 	current_floor = 1
 	run_gold_earned = 0
 	equipped_items.clear()
 	player_soul = 0.0
 	_calculate_player_stats()
 	_update_player_visuals()
+	for r_id in party_members:
+		party_members[r_id]["current_hp"] = party_members[r_id]["max_hp"]
+		party_members[r_id]["cooldown"] = 0.0
+		if party_members[r_id].has("taunt_timer"):
+			party_members[r_id]["taunt_timer"] = 0.0
 	_start_floor_battle(true)
+	if rebirth_3d:
+		rebirth_3d.animate_ascent_through_gate(Callable())
 
 func _start_floor_battle(with_walk_entry: bool = false):
 	state = GameState.BATTLE
@@ -1294,6 +1834,7 @@ func _start_floor_battle(with_walk_entry: bool = false):
 	$Arena.visible = true
 	if archway_sprite: archway_sprite.visible = true
 	if chest_sprite: chest_sprite.visible = false
+	if chest_modal: chest_modal.visible = false
 	if room_clear_banner: room_clear_banner.visible = false
 	
 	player_sprite.modulate = Color(1, 1, 1, 1)
@@ -1317,9 +1858,20 @@ func _start_floor_battle(with_walk_entry: bool = false):
 	player_name_label.text = localization.get_string("player_label")
 	enemy_name_label.text = e_name
 	
+	if party_members.has("wanderer"):
+		party_members["wanderer"]["current_hp"] = player_stats.get("current_health", 100)
+		party_members["wanderer"]["max_hp"] = player_stats.get("max_health", 100)
+	
 	_update_hud()
+	_update_party_hud()
 	_refresh_equipped_icons()
 	_log("[color=#c0a060]%s[/color]" % [localization.get_string("log_floor_entered") % [current_floor, e_name]])
+	
+	if sound_manager:
+		sound_manager.play_combat_theme()
+	
+	if rebirth_3d:
+		rebirth_3d.set_stage_battle(current_floor, enemy_data.get("id", ""), is_boss)
 	
 	if with_walk_entry:
 		_animate_room_entrance()
@@ -1528,6 +2080,13 @@ func _execute_player_attack():
 	var combo_idx = player_combo_step
 	player_combo_step = (player_combo_step + 1) % 3
 	
+	player_soul = min(100.0, player_soul + 20.0)
+	if soul_bar != null:
+		soul_bar.value = player_soul
+	
+	if rebirth_3d:
+		rebirth_3d.animate_companion_attack("wanderer", Vector3.ZERO, is_crit)
+	
 	match combo_idx:
 		0:
 			_execute_combo_twin_slash(dmg, is_crit, lifesteal, e_name)
@@ -1577,7 +2136,6 @@ func _execute_combo_twin_slash(total_dmg: int, is_crit: bool, lifesteal: int, e_
 		_flash_node(enemy_sprite, Color(3.0, 0.5, 0.5, 1.0))
 		
 		enemy_data["current_health"] = max(0, enemy_data["current_health"] - dmg2)
-		player_soul = min(100.0, player_soul + 20.0)
 		
 		if lifesteal > 0:
 			player_stats["current_health"] = min(player_stats["max_health"], player_stats["current_health"] + lifesteal)
@@ -1623,7 +2181,6 @@ func _execute_combo_heavy_thrust(dmg: int, is_crit: bool, lifesteal: int, e_name
 			_log(localization.get_string("log_player_hit") % [e_name, bonus_dmg])
 		
 		enemy_data["current_health"] = max(0, enemy_data["current_health"] - bonus_dmg)
-		player_soul = min(100.0, player_soul + 22.0)
 		
 		if lifesteal > 0:
 			player_stats["current_health"] = min(player_stats["max_health"], player_stats["current_health"] + lifesteal)
@@ -1673,7 +2230,6 @@ func _execute_combo_overhead_cleave(dmg: int, is_crit: bool, lifesteal: int, e_n
 			_log(localization.get_string("log_player_hit") % [e_name, dmg])
 		
 		enemy_data["current_health"] = max(0, enemy_data["current_health"] - dmg)
-		player_soul = min(100.0, player_soul + 25.0)
 		
 		if lifesteal > 0:
 			player_stats["current_health"] = min(player_stats["max_health"], player_stats["current_health"] + lifesteal)
@@ -1691,6 +2247,12 @@ func _execute_combo_overhead_cleave(dmg: int, is_crit: bool, lifesteal: int, e_n
 func _execute_player_soul_cleave():
 	player_soul = 0.0
 	sound_manager.play_soul()
+	if rebirth_3d:
+		rebirth_3d.animate_hero_soul_cleave()
+	
+	var p_dmg = int(player_stats.get("attack_damage", 15) * 2.5)
+	enemy_data["current_health"] = max(0, enemy_data["current_health"] - p_dmg)
+	_update_hud()
 	
 	var tw = create_tween()
 	# Hero dashes straight into enemy space and leaps
@@ -1711,9 +2273,6 @@ func _execute_player_soul_cleave():
 		_flash_node(enemy_sprite, Color(3.5, 0.3, 2.5, 1.0))
 		
 		_spawn_combat_badge(player_anchor.position + Vector2(50, -230), localization.get_string("badge_soul_cleave"), Color(0.65, 0.05, 0.75, 0.95), Color(1.0, 0.85, 0.2, 1.0))
-		
-		var p_dmg = int(player_stats.get("attack_damage", 15) * 2.5)
-		enemy_data["current_health"] = max(0, enemy_data["current_health"] - p_dmg)
 		_spawn_floating_text(enemy_anchor.position + Vector2(0, -155), localization.get_string("float_soul") % p_dmg, Color(0.95, 0.4, 1.0), 1.6)
 		_log(localization.get_string("log_player_soul") % p_dmg)
 		_update_hud()
@@ -1727,6 +2286,37 @@ func _execute_player_soul_cleave():
 	tw.parallel().tween_property(weapon_anchor, "rotation_degrees", -20.0, 0.14 / combat_speed)
 
 func _execute_enemy_attack():
+	if rebirth_3d:
+		rebirth_3d.animate_enemy_attack()
+	
+	# Check if Bulwark taunt is active
+	var bulwark_taunting = party_members.get("bulwark", {}).get("active", false) and party_members["bulwark"].get("taunt_timer", 0.0) > 0.0 and party_members["bulwark"].get("current_hp", 0) > 0
+	if bulwark_taunting:
+		telegraph_glow.visible = true
+		var tw_tel = create_tween()
+		tw_tel.tween_property(telegraph_glow, "modulate:a", 1.0, 0.07 / combat_speed)
+		tw_tel.tween_property(telegraph_glow, "modulate:a", 0.0, 0.07 / combat_speed)
+		tw_tel.tween_callback(func(): telegraph_glow.visible = false)
+		
+		var tw_tank = create_tween()
+		tw_tank.tween_property(enemy_anchor, "position:x", enemy_base_pos.x - 120, 0.09 / combat_speed)
+		
+		var raw_dmg = enemy_data.get("attack_damage", 10)
+		var mitigated_dmg = max(1, int(raw_dmg * 0.40))
+		party_members["bulwark"]["current_hp"] = max(0, party_members["bulwark"]["current_hp"] - mitigated_dmg)
+		
+		tw_tank.tween_callback(func():
+			sound_manager.play_shield_block()
+			_spawn_parry_spark(player_anchor.position + Vector2(-60, -140))
+			_spawn_combat_badge(player_anchor.position + Vector2(-60, -210), "🛡 БЛОК ЩИТОМ (-60%)", Color(0.1, 0.4, 0.8, 0.95), Color(0.5, 0.9, 1.0, 1.0))
+			_spawn_floating_text(player_anchor.position + Vector2(-60, -140), "-%d [Щит]" % mitigated_dmg, Color(0.5, 0.8, 1.0))
+			_log("[color=#4da6ff]🛡 Оплот принимает удар на щит: поглощено 60%% урона (-%d ОЗ Оплота).[/color]" % mitigated_dmg)
+			_shake_node(player_anchor, 3.0)
+			_update_party_hud()
+		)
+		tw_tank.tween_property(enemy_anchor, "position:x", enemy_base_pos.x, 0.13 / combat_speed).set_delay(0.06 / combat_speed)
+		return
+	
 	# Telegraph flash before lunge
 	telegraph_glow.visible = true
 	var tw_tel = create_tween()
@@ -1773,8 +2363,11 @@ func _execute_enemy_attack():
 			# Hero recoil
 			_shake_node(player_anchor, 4.0)
 			player_stats["current_health"] = max(0, player_stats["current_health"] - dmg)
+			if party_members.has("wanderer"):
+				party_members["wanderer"]["current_hp"] = player_stats["current_health"]
 			player_soul = min(100.0, player_soul + 12.0)
 			_update_hud()
+			_update_party_hud()
 			if player_stats["current_health"] <= 0:
 				_on_player_perished()
 		)
@@ -1790,8 +2383,11 @@ func _execute_enemy_attack():
 			_log(localization.get_string("log_enemy_hit") % [e_name, dmg])
 			
 			player_stats["current_health"] = max(0, player_stats["current_health"] - dmg)
+			if party_members.has("wanderer"):
+				party_members["wanderer"]["current_hp"] = player_stats["current_health"]
 			player_soul = min(100.0, player_soul + 10.0)
 			_update_hud()
+			_update_party_hud()
 			if player_stats["current_health"] <= 0:
 				_on_player_perished()
 		)
@@ -1805,10 +2401,26 @@ func _on_enemy_defeated():
 	var gold_mult = float(player_stats.get("gold_multiplier", 1.0))
 	var total_gold = int(round(base_gold * gold_mult))
 	
+	# Nightshade thief passive bonus (+35% gold find)
+	if party_members.get("nightshade", {}).get("active", false):
+		total_gold = int(round(total_gold * 1.35))
+	
 	run_gold_earned += total_gold
 	save_manager.add_gold(total_gold)
 	save_manager.record_run_completion(current_floor)
 	gold_label.text = "%d %s" % [save_manager.save_data.get("PersistentGold", 0), localization.get_string("gold_unit")]
+	
+	# Bloodweaver cleric passive bonus (+15% post-battle squad heal)
+	if party_members.get("bloodweaver", {}).get("active", false):
+		for r in party_members:
+			var m = party_members[r]
+			var heal = int(m["max_hp"] * 0.15)
+			m["current_hp"] = min(m["max_hp"], m["current_hp"] + heal)
+		var hero_heal = int(player_stats["max_health"] * 0.15)
+		player_stats["current_health"] = min(player_stats["max_health"], player_stats["current_health"] + hero_heal)
+		_log("[color=#e05565]🩸 Кровный Ткач залечивает раны отряда на 15% ОЗ после боя.[/color]")
+		_update_party_hud()
+		_update_hud()
 	
 	var e_name = localization.get_enemy_name(enemy_data.get("id", ""), enemy_data.get("name", ""))
 	_log(localization.get_string("log_enemy_defeated") % [e_name, total_gold])
@@ -1827,10 +2439,13 @@ func _on_enemy_defeated():
 	walk_dust.emitting = true
 	sound_manager.play_step()
 	
+	if rebirth_3d:
+		rebirth_3d.animate_room_cleared(Callable())
+	
 	tw.tween_property(player_anchor, "position:x", 580.0, 0.55).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
 	tw.tween_callback(func():
 		walk_dust.emitting = false
-		_enter_draft_state()
+		_show_treasure_chest_modal()
 	)
 
 func _on_player_perished():
@@ -1854,7 +2469,7 @@ func _enter_draft_state():
 	draft_modal.visible = true
 	floor_banner.text = ""
 	gold_label.text = "%d %s" % [save_manager.save_data.get("PersistentGold", 0), localization.get_string("gold_unit")]
-	current_draft_items = game_data.get_random_items(3, current_floor)
+	current_draft_items = game_data.get_smart_draft_items(3, current_floor, equipped_items)
 	_refresh_draft_ui()
 
 func _refresh_draft_ui():
@@ -1939,15 +2554,16 @@ func _create_draft_card(item: Dictionary) -> Control:
 	
 	var slot = item.get("slot", "Weapon")
 	var rarity = item.get("rarity", "Common")
-	var rarity_color = _get_rarity_color(rarity)
+	var is_fusion = item.get("is_fusion", false)
+	var rarity_color = Color(1.0, 0.85, 0.2) if is_fusion else _get_rarity_color(rarity)
 	
 	var card_style = StyleBoxFlat.new()
-	card_style.bg_color = Color(0.08, 0.07, 0.11, 0.98)
+	card_style.bg_color = Color(0.12, 0.09, 0.16, 0.98) if is_fusion else Color(0.08, 0.07, 0.11, 0.98)
 	card_style.border_color = rarity_color
-	card_style.border_width_left = 2
-	card_style.border_width_top = 2
-	card_style.border_width_right = 2
-	card_style.border_width_bottom = 2
+	card_style.border_width_left = 3 if is_fusion else 2
+	card_style.border_width_top = 3 if is_fusion else 2
+	card_style.border_width_right = 3 if is_fusion else 2
+	card_style.border_width_bottom = 3 if is_fusion else 2
 	card_style.corner_radius_top_left = 8
 	card_style.corner_radius_top_right = 8
 	card_style.corner_radius_bottom_left = 8
@@ -1965,9 +2581,13 @@ func _create_draft_card(item: Dictionary) -> Control:
 	var rarity_disp = localization.get_rarity_name(rarity).to_upper()
 	var slot_disp = localization.get_slot_name(slot).to_upper()
 	var lbl_slot = Label.new()
-	lbl_slot.text = "[ %s • %s ]" % [rarity_disp, slot_disp]
+	if is_fusion:
+		lbl_slot.text = "[ ⚡ СЛИЯНИЕ / EVOLVE ⚡ ]"
+		lbl_slot.modulate = Color(1.0, 0.9, 0.25)
+	else:
+		lbl_slot.text = "[ %s • %s ]" % [rarity_disp, slot_disp]
+		lbl_slot.modulate = rarity_color
 	lbl_slot.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	lbl_slot.modulate = rarity_color
 	lbl_slot.add_theme_font_size_override("font_size", 12)
 	vbox.add_child(lbl_slot)
 	
@@ -2034,7 +2654,11 @@ func _create_draft_card(item: Dictionary) -> Control:
 	lbl_replace.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	lbl_replace.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	lbl_replace.add_theme_font_size_override("font_size", 11)
-	if cur_equipped:
+	if is_fusion:
+		var target_name = item.get("fusion_target_name", "Реликвия")
+		lbl_replace.text = "⚡ Слияние с: %s (Тир %d)" % [target_name, item.get("new_tier", 2)]
+		lbl_replace.add_theme_color_override("font_color", Color(1.0, 0.85, 0.2))
+	elif cur_equipped:
 		var cur_name = localization.get_item_name(cur_equipped)
 		lbl_replace.text = localization.get_string("replaces_slot") % cur_name
 		lbl_replace.add_theme_color_override("font_color", Color(1.0, 0.65, 0.35))
@@ -2048,7 +2672,11 @@ func _create_draft_card(item: Dictionary) -> Control:
 	vbox.add_child(spacer)
 	
 	var btn_select = Button.new()
-	btn_select.text = localization.get_string("equip_relic")
+	if is_fusion:
+		btn_select.text = "⚡ СОВЕРШИТЬ СЛИЯНИЕ ⚡"
+		btn_select.add_theme_color_override("font_color", Color(1.0, 0.9, 0.3))
+	else:
+		btn_select.text = localization.get_string("equip_relic")
 	btn_select.custom_minimum_size = Vector2(0, 40)
 	btn_select.add_theme_font_size_override("font_size", 13)
 	btn_select.pressed.connect(func(): _on_item_drafted(item))
@@ -2068,9 +2696,18 @@ func _get_rarity_color(rarity: String) -> Color:
 
 func _on_item_drafted(item: Dictionary):
 	current_draft_items.clear()
-	sound_manager.play_equip()
 	var slot = item.get("slot", "Weapon")
-	equipped_items[slot] = item
+	if item.get("is_fusion", false) and equipped_items.has(slot) and equipped_items[slot] != null:
+		var fused = game_data.fuse_items(equipped_items[slot], item)
+		equipped_items[slot] = fused
+		sound_manager.play_fusion()
+		_log("[color=gold]⚡ СЛИЯНИЕ РЕЛИКВИИ: %s улучшен до Тира %d! ⚡[/color]" % [fused.get("name", ""), fused.get("tier", 2)])
+	else:
+		sound_manager.play_equip()
+		equipped_items[slot] = item
+		var itm_name = localization.get_item_name(item)
+		var slot_name = localization.get_slot_name(slot)
+		_log(localization.get_string("log_equipped") % [itm_name, slot_name])
 	
 	current_floor += 1
 	_calculate_player_stats()
@@ -2079,13 +2716,12 @@ func _on_item_drafted(item: Dictionary):
 	var max_hp = player_stats.get("max_health", 100)
 	var heal_amt = int(round(max_hp * 0.25))
 	player_stats["current_health"] = min(max_hp, player_stats.get("current_health", max_hp) + heal_amt)
-	
-	var itm_name = localization.get_item_name(item)
-	var slot_name = localization.get_slot_name(slot)
-	_log(localization.get_string("log_equipped") % [itm_name, slot_name])
 	_log(localization.get_string("log_heal_boon") % heal_amt)
 	
 	_start_floor_battle(true)
+	if rebirth_3d:
+		sound_manager.play_elevator()
+		rebirth_3d.animate_elevator_ascent(Callable())
 
 func _on_skip_draft_pressed():
 	current_draft_items.clear()
@@ -2107,6 +2743,9 @@ func _on_skip_draft_pressed():
 	_log(localization.get_string("log_heal_boon") % heal_amt)
 	
 	_start_floor_battle(true)
+	if rebirth_3d:
+		sound_manager.play_elevator()
+		rebirth_3d.animate_elevator_ascent(Callable())
 
 # ==============================================================================
 # DEFEAT MODAL

@@ -17,6 +17,12 @@ var save_data: Dictionary = {
 		"CritChance": 0,
 		"Lifesteal": 0,
 		"GoldMultiplier": 0
+	},
+	"PartyState": {
+		"bulwark": {"unlocked": true, "active": true},
+		"wanderer": {"unlocked": true, "active": true},
+		"nightshade": {"unlocked": true, "active": true},
+		"bloodweaver": {"unlocked": true, "active": true}
 	}
 }
 
@@ -122,4 +128,17 @@ func get_fullscreen() -> bool:
 
 func set_fullscreen(fs: bool):
 	save_data["Fullscreen"] = fs
+	save_game()
+
+func get_companion_state(id: String) -> Dictionary:
+	if save_data.has("PartyState") and save_data["PartyState"].has(id):
+		return save_data["PartyState"][id]
+	return {"unlocked": true, "active": true}
+
+func set_companion_active(id: String, active: bool):
+	if not save_data.has("PartyState"):
+		save_data["PartyState"] = {}
+	if not save_data["PartyState"].has(id):
+		save_data["PartyState"][id] = {"unlocked": true, "active": true}
+	save_data["PartyState"][id]["active"] = active
 	save_game()

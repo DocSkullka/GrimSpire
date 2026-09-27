@@ -1,0 +1,185 @@
+[gd_scene format=3]
+
+[ext_resource type="PackedScene" path="res://assets/models/spire_corridor_pillar.gltf" id="1_c0t86"]
+[ext_resource type="PackedScene" path="res://assets/models/spire_campfire.gltf" id="2_veire"]
+[ext_resource type="PackedScene" path="res://assets/models/blood_altar.gltf" id="3_xgncb"]
+[ext_resource type="PackedScene" path="res://assets/models/spire_iron_gate.gltf" id="4_37kgh"]
+[ext_resource type="PackedScene" path="res://assets/models/spire_elevator_platform.gltf" id="5_gtawn"]
+[ext_resource type="PackedScene" path="res://assets/models/spire_chest.gltf" id="6_uki8y"]
+
+[sub_resource type="Environment" id="Environment_pa4y5"]
+background_mode = 1
+background_color = Color(0.04, 0.03, 0.06, 1)
+ambient_light_source = 2
+ambient_light_color = Color(0.14, 0.11, 0.18, 1)
+ambient_light_energy = 0.9
+glow_enabled = true
+glow_bloom = 0.22
+glow_hdr_threshold = 0.95
+fog_enabled = true
+fog_light_color = Color(0.06, 0.05, 0.09, 1)
+fog_density = 0.015
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_0mw75"]
+albedo_color = Color(0.18, 0.16, 0.2, 1)
+roughness = 0.85
+
+[sub_resource type="BoxMesh" id="BoxMesh_6mlb6"]
+size = Vector3(32, 0.2, 8)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_nujbj"]
+albedo_color = Color(0.12, 0.11, 0.14, 1)
+roughness = 0.9
+
+[sub_resource type="BoxMesh" id="BoxMesh_j5406"]
+size = Vector3(32, 8, 0.4)
+
+[node name="Main3D" type="Node3D" unique_id=1086199765]
+
+[node name="WorldEnvironment" type="WorldEnvironment" parent="." unique_id=1117659623]
+environment = SubResource("Environment_pa4y5")
+
+[node name="MoonLight" type="DirectionalLight3D" parent="." unique_id=1648246764]
+transform = Transform3D(0.88294756, -0.31413782, 0.34888536, 0, 0.7431448, 0.6691306, -0.46947157, -0.59080726, 0.6561579, 0, 0, 0)
+light_color = Color(0.55, 0.65, 0.88, 1)
+light_energy = 1.15
+shadow_enabled = true
+
+[node name="Camera25D" type="Camera3D" parent="." unique_id=1516225152]
+transform = Transform3D(1, 0, 0, 0, 0.9953962, 0.09584575, 0, -0.09584575, 0.9953962, 0, 1.95, 5.9)
+current = true
+fov = 44.0
+
+[node name="Environment" type="Node3D" parent="." unique_id=199833100]
+
+[node name="Floor" type="MeshInstance3D" parent="Environment" unique_id=1781420298]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.1, 0)
+material_override = SubResource("StandardMaterial3D_0mw75")
+mesh = SubResource("BoxMesh_6mlb6")
+
+[node name="BackWall" type="MeshInstance3D" parent="Environment" unique_id=2108733069]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 3.8, -2.4)
+material_override = SubResource("StandardMaterial3D_nujbj")
+mesh = SubResource("BoxMesh_j5406")
+
+[node name="Pillars" type="Node3D" parent="Environment" unique_id=1275124835]
+
+[node name="Pillar_1" type="Node3D" parent="Environment/Pillars" unique_id=2007632536 instance=ExtResource("1_c0t86")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -10.8, 0, -2)
+
+[node name="Pillar_2" type="Node3D" parent="Environment/Pillars" unique_id=1659784118 instance=ExtResource("1_c0t86")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -7.2, 0, -2)
+
+[node name="Pillar_3" type="Node3D" parent="Environment/Pillars" unique_id=469466170 instance=ExtResource("1_c0t86")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -3.6, 0, -2)
+
+[node name="Pillar_4" type="Node3D" parent="Environment/Pillars" unique_id=1880628659 instance=ExtResource("1_c0t86")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -2)
+
+[node name="Pillar_5" type="Node3D" parent="Environment/Pillars" unique_id=1534361791 instance=ExtResource("1_c0t86")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 3.6, 0, -2)
+
+[node name="Pillar_6" type="Node3D" parent="Environment/Pillars" unique_id=1418783811 instance=ExtResource("1_c0t86")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 7.2, 0, -2)
+
+[node name="Pillar_7" type="Node3D" parent="Environment/Pillars" unique_id=260667465 instance=ExtResource("1_c0t86")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 10.8, 0, -2)
+
+[node name="Torches" type="Node3D" parent="Environment" unique_id=965945835]
+
+[node name="TorchLight_1" type="OmniLight3D" parent="Environment/Torches" unique_id=1347219782]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -9, 2.2, -1.8)
+light_color = Color(1, 0.65, 0.22, 1)
+light_energy = 1.8
+shadow_enabled = true
+omni_range = 5.5
+
+[node name="TorchLight_2" type="OmniLight3D" parent="Environment/Torches" unique_id=962237614]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -4.5, 2.2, -1.8)
+light_color = Color(1, 0.65, 0.22, 1)
+light_energy = 1.8
+shadow_enabled = true
+omni_range = 5.5
+
+[node name="TorchLight_3" type="OmniLight3D" parent="Environment/Torches" unique_id=1575867219]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2.2, -1.8)
+light_color = Color(1, 0.65, 0.22, 1)
+light_energy = 1.8
+shadow_enabled = true
+omni_range = 5.5
+
+[node name="TorchLight_4" type="OmniLight3D" parent="Environment/Torches" unique_id=75284549]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 4.5, 2.2, -1.8)
+light_color = Color(1, 0.65, 0.22, 1)
+light_energy = 1.8
+shadow_enabled = true
+omni_range = 5.5
+
+[node name="TorchLight_5" type="OmniLight3D" parent="Environment/Torches" unique_id=2126077841]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 9, 2.2, -1.8)
+light_color = Color(1, 0.65, 0.22, 1)
+light_energy = 1.8
+shadow_enabled = true
+omni_range = 5.5
+
+[node name="CampGroup" type="Node3D" parent="Environment" unique_id=1574384505]
+
+[node name="Campfire" type="Node3D" parent="Environment/CampGroup" unique_id=805388378 instance=ExtResource("2_veire")]
+
+[node name="CampfireLight" type="OmniLight3D" parent="Environment/CampGroup" unique_id=64957052]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.5, 0)
+light_color = Color(1, 0.6, 0.18, 1)
+light_energy = 2.4
+omni_range = 6.0
+
+[node name="BloodAltar" type="Node3D" parent="Environment/CampGroup" unique_id=915116875 instance=ExtResource("3_xgncb")]
+transform = Transform3D(0.75, 0, 0, 0, 0.75, 0, 0, 0, 0.75, -3.2, 0, -0.6)
+
+[node name="AltarLight" type="OmniLight3D" parent="Environment/CampGroup" unique_id=972484734]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -3.2, 0.8, -0.6)
+light_color = Color(0.9, 0.15, 0.15, 1)
+light_energy = 2.0
+omni_range = 4.5
+
+[node name="IronGate" type="Node3D" parent="Environment" unique_id=239349497 instance=ExtResource("4_37kgh")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -6.2, 0, -0.2)
+
+[node name="ElevatorPlatform" type="Node3D" parent="Environment" unique_id=1353538912 instance=ExtResource("5_gtawn")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 6.5, 0, 0)
+
+[node name="ElevatorLight" type="OmniLight3D" parent="Environment" unique_id=2074447455]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 6.5, 0.6, 0)
+light_color = Color(0.95, 0.25, 0.18, 1)
+light_energy = 1.8
+omni_range = 4.0
+
+[node name="TreasureChest" type="Node3D" parent="Environment" unique_id=1756917020 instance=ExtResource("6_uki8y")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 3.2, 0, 0.2)
+
+[node name="ChestLight" type="OmniLight3D" parent="Environment" unique_id=1384206230]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 3.2, 0.6, 0.2)
+light_color = Color(1, 0.85, 0.25, 1)
+light_energy = 2.0
+omni_range = 3.5
+
+[node name="PartySquad" type="Node3D" parent="." unique_id=41989600]
+
+[node name="TankSlot" type="Marker3D" parent="PartySquad" unique_id=587424610]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.2, 0, 0.2)
+
+[node name="HeroSlot" type="Marker3D" parent="PartySquad" unique_id=1873892870]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.4, 0, 0)
+
+[node name="ThiefSlot" type="Marker3D" parent="PartySquad" unique_id=979461185]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2.6, 0, -0.2)
+
+[node name="ClericSlot" type="Marker3D" parent="PartySquad" unique_id=1089293098]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -3.8, 0, -0.3)
+
+[node name="EnemyWave" type="Node3D" parent="." unique_id=654008512]
+
+[node name="EnemySlot1" type="Marker3D" parent="EnemyWave" unique_id=509928691]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.8, 0, 0)
+
+[node name="EnemySlot2" type="Marker3D" parent="EnemyWave" unique_id=811000627]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 3.4, 0, -0.2)

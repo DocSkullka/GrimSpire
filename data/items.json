@@ -254,5 +254,117 @@
     "rarity": "Cursed",
     "description": "Gives fatal precision on critical strikes, sacrificing mortal endurance.",
     "stats": { "CritMultiplier": 0.85, "CritChance": 0.20, "MaxHealth": -35 }
+  },
+  {
+    "id": "spiked_bulwark",
+    "name": "Spiked Wall of the Bulwark",
+    "slot": "OffHand",
+    "rarity": "Rare",
+    "description": "Massive spiked tower shield that reflects brutal impact upon attackers.",
+    "stats": { "Armor": 22, "MaxHealth": 50, "DamageReduction": 0.10 }
+  },
+  {
+    "id": "tower_aegis",
+    "name": "Aegis of the Iron Citadel",
+    "slot": "OffHand",
+    "rarity": "Epic",
+    "description": "Sacred tower shield blessed with impenetrable iron wardings.",
+    "stats": { "Armor": 34, "MaxHealth": 90, "DamageReduction": 0.15 }
+  },
+  {
+    "id": "iron_heart",
+    "name": "Iron Heart of the Bastion",
+    "slot": "Accessory",
+    "rarity": "Epic",
+    "description": "Heavy pulsating iron core that bolsters the bearer's constitution.",
+    "stats": { "MaxHealth": 110, "Armor": 16 }
+  },
+  {
+    "id": "fortified_mail",
+    "name": "Bulwark's Fortified Plate",
+    "slot": "Armor",
+    "rarity": "Rare",
+    "description": "Interlocking dark-steel plates engineered to blunt dragon fangs.",
+    "stats": { "Armor": 30, "MaxHealth": 80 }
+  },
+  {
+    "id": "shadow_daggers",
+    "name": "Nightshade Twin Daggers",
+    "slot": "Weapon",
+    "rarity": "Rare",
+    "description": "Curved blackened stiletto blades dipped in paralytic nightshade venom.",
+    "stats": { "AttackDamage": 30, "AttackSpeed": 0.38, "CritChance": 0.22 }
+  },
+  {
+    "id": "master_lockpick_kit",
+    "name": "Master's Jeweled Lockpicks",
+    "slot": "Accessory",
+    "rarity": "Rare",
+    "description": "Fine obsidian needle picks capable of unlocking infernal chests.",
+    "stats": { "GoldMultiplier": 0.40, "DodgeChance": 0.12 }
+  },
+  {
+    "id": "cloak_of_shadows",
+    "name": "Mantle of the Ghost Guild",
+    "slot": "Armor",
+    "rarity": "Epic",
+    "description": "Silken cowl that blends seamlessly into the Spire's cold gloom.",
+    "stats": { "DodgeChance": 0.20, "CritChance": 0.15, "AttackDamage": 16 }
+  },
+  {
+    "id": "venom_vial",
+    "name": "Vial of Gorgon Neurotoxin",
+    "slot": "Accessory",
+    "rarity": "Uncommon",
+    "description": "Concentrated acidic venom that coats daggers before striking.",
+    "stats": { "CritMultiplier": 0.45, "AttackSpeed": 0.16 }
+  },
+  {
+    "id": "occult_grimoire",
+    "name": "Grimoire of the Blood Weaver",
+    "slot": "OffHand",
+    "rarity": "Rare",
+    "description": "Tome written in coagulated ichor containing forbidden mending hymns.",
+    "stats": { "MaxHealth": 55, "Lifesteal": 0.16, "AttackDamage": 20 }
+  },
+  {
+    "id": "chalice_of_sanguine_vows",
+    "name": "Chalice of Sanguine Vows",
+    "slot": "Accessory",
+    "rarity": "Epic",
+    "description": "Ceremonial cup overflowing with sacrificial blood vitality.",
+    "stats": { "MaxHealth": 95, "Lifesteal": 0.20, "GoldMultiplier": 0.25 }
+  },
+  {
+    "id": "censer_of_warding",
+    "name": "Censer of Tormented Souls",
+    "slot": "OffHand",
+    "rarity": "Epic",
+    "description": "Swings with suffocating incense that shields allies from witchcraft.",
+    "stats": { "Armor": 22, "MaxHealth": 75, "DamageReduction": 0.12 }
+  },
+  {
+    "id": "lantern_of_souls",
+    "name": "Lantern of Ancestral Souls",
+    "slot": "Accessory",
+    "rarity": "Legendary",
+    "description": "Traps departing souls to heal and revitalize all companions.",
+    "stats": { "MaxHealth": 125, "Lifesteal": 0.24, "CritChance": 0.14 }
+  },
+  {
+    "id": "executioner_greatsword",
+    "name": "Executioner's Dread Greatsword",
+    "slot": "Weapon",
+    "rarity": "Epic",
+    "description": "Two-handed notched execution blade that rends through soul and bone.",
+    "stats": { "AttackDamage": 46, "CritMultiplier": 0.55, "CritChance": 0.16 }
+  },
+  {
+    "id": "soulband_bracers",
+    "name": "Runed Soulband Bracers",
+    "slot": "Accessory",
+    "rarity": "Rare",
+    "description": "Heavy dark-steel bracers pulsing with crimson soul energy.",
+    "stats": { "AttackDamage": 22, "AttackSpeed": 0.20, "MaxHealth": 45 }
   }
 ]
